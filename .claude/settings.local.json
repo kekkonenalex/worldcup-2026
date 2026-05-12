@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(npx create-next-app@latest *)",
+      "Bash(node *)",
+      "Bash(npm install *)",
+      "Bash(New-Item -ItemType Directory -Force \"lib\", \"lib\\\\supabase\", \"components\", \"types\")",
+      "Bash(Out-Null)",
+      "Bash(Write-Output \"Directories created\")",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ]
+  }
+}
