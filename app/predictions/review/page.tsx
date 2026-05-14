@@ -1,0 +1,166 @@
+import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase/server'
+import {
+  computeGroupStandings,
+  rankThirdPlaceTeams,
+  getAdvancingTeams,
+  type MatchInput,
+  type PredictionInput,
+  type TeamInput,
+  type TeamStanding,
+} from '@/lib/simulation'
+import StandingsReview from '@/components/StandingsReview'
+import type { MatchWithTeams, GroupPrediction } from '@/types/database'
+
+const GROUP_LETTERS = 'ABCDEFGHIJKL'.split('')
+
+export default async function ReviewPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) redirect('/login')
+
+  // Fetch all group stage matches with embedded team info
+  const { data: rawMatches, error: matchError } = await supabase
+    .from('matches')
+    .select(`
+      id, match_number, group_letter, home_team_id, away_team_id,
+      home_team:teams!matches_home_team_id_fkey(id, name, short_code, group_letter, flag_emoji),
+      away_team:teams!matches_away_team_id_fkey(id, name, short_code, group_letter, flag_emoji)
+    `)
+    .eq('stage', 'group')
+    .order('match_number', { ascending: true })
+
+  if (matchError || !rawMatches) {
+    return <ErrorPage message={matchError?.message ?? 'Failed to load matches.'} />
+  }
+
+  const matches = rawMatches as unknown as MatchWithTeams[]
+
+  // Fetch user's predictions
+  const { data: rawPreds } = await supabase
+    .from('group_predictions')
+    .select('*')
+    .eq('user_id', user.id)
+
+  const userPredictions = (rawPreds ?? []) as unknown as GroupPrediction[]
+
+  const predictionCount = userPredictions.length
+
+  // Not enough predictions — show incomplete prompt
+  if (predictionCount < 72) {
+    return (
+      <main className="min-h-screen bg-gray-950 text-white flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <h1 className="text-2xl font-bold mb-3">Predictions incomplete</h1>
+          <p className="text-gray-400 mb-2">
+            You need to predict all 72 group stage matches to review your standings.
+          </p>
+          <p className="text-3xl font-bold text-blue-400 mb-8">
+            {predictionCount} / 72
+          </p>
+          <Link
+            href="/predictions"
+            className="inline-block rounded-lg bg-blue-600 hover:bg-blue-500 px-6 py-2.5 font-semibold transition-colors"
+          >
+            ← Back to predictions
+          </Link>
+        </div>
+      </main>
+    )
+  }
+
+  // Build per-group data structures
+  const matchesByGroup = new Map<string, MatchInput[]>()
+  const teamsByGroup = new Map<string, Map<number, TeamInput>>()
+
+  for (const raw of matches) {
+    const letter = raw.group_letter
+    if (!letter) continue
+
+    if (!matchesByGroup.has(letter)) matchesByGroup.set(letter, [])
+    if (!teamsByGroup.has(letter)) teamsByGroup.set(letter, new Map())
+
+    matchesByGroup.get(letter)!.push({
+      id: raw.id,
+      match_number: raw.match_number,
+      group_letter: letter,
+      home_team_id: raw.home_team_id!,
+      away_team_id: raw.away_team_id!,
+    })
+
+    const tMap = teamsByGroup.get(letter)!
+    if (raw.home_team && !tMap.has(raw.home_team.id)) {
+      tMap.set(raw.home_team.id, { ...raw.home_team, group_letter: letter })
+    }
+    if (raw.away_team && !tMap.has(raw.away_team.id)) {
+      tMap.set(raw.away_team.id, { ...raw.away_team, group_letter: letter })
+    }
+  }
+
+  const predictions: PredictionInput[] = userPredictions.map(p => ({
+    match_id: p.match_id,
+    predicted_home_score: p.predicted_home_score,
+    predicted_away_score: p.predicted_away_score,
+  }))
+
+  // Run simulation for each group
+  const allGroupStandings: TeamStanding[][] = []
+  try {
+    for (const letter of GROUP_LETTERS) {
+      const groupMatches = matchesByGroup.get(letter)
+      const groupTeams = teamsByGroup.get(letter)
+      if (!groupMatches || !groupTeams) continue
+
+      const standings = computeGroupStandings(
+        letter,
+        groupMatches,
+        predictions,
+        Array.from(groupTeams.values())
+      )
+      allGroupStandings.push(standings)
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Simulation failed.'
+    return <ErrorPage message={msg} />
+  }
+
+  const thirdPlaceResult = rankThirdPlaceTeams(allGroupStandings)
+  const advancingTeams = getAdvancingTeams(allGroupStandings, thirdPlaceResult)
+
+  return (
+    <div className="min-h-screen bg-gray-950 text-white">
+      <header className="px-4 pt-8 pb-4 max-w-5xl mx-auto">
+        <Link href="/predictions" className="text-gray-500 hover:text-gray-300 text-sm">
+          ← Adjust my predictions
+        </Link>
+        <h1 className="text-3xl font-bold tracking-tight mt-2">Your Simulated Standings</h1>
+        <p className="text-gray-400 mt-1">
+          Here is how the group stage would finish based on your predictions.
+          You can adjust if anything looks off.
+        </p>
+      </header>
+
+      <StandingsReview
+        groupStandings={allGroupStandings}
+        thirdPlaceResult={thirdPlaceResult}
+        advancingTeams={advancingTeams}
+      />
+    </div>
+  )
+}
+
+function ErrorPage({ message }: { message: string }) {
+  return (
+    <main className="min-h-screen bg-gray-950 text-white flex items-center justify-center px-4">
+      <div className="text-center max-w-md">
+        <h1 className="text-2xl font-bold mb-3">Something went wrong</h1>
+        <p className="text-gray-400 mb-6">{message}</p>
+        <Link href="/predictions" className="text-blue-400 hover:underline">
+          ← Back to predictions
+        </Link>
+      </div>
+    </main>
+  )
+}
