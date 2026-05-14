@@ -111,6 +111,44 @@ export async function joinLeague(
   return { success: true, leagueId }
 }
 
+// ─── removeMember ─────────────────────────────────────────────────────────────
+
+export async function removeMember(
+  leagueId: number,
+  targetUserId: string
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
+
+  if (targetUserId === user.id) {
+    return { success: false, error: 'You cannot remove yourself. Use Leave League instead.' }
+  }
+
+  // Verify caller is the league creator
+  const { data: leagueRows } = await supabase
+    .from('leagues')
+    .select('created_by')
+    .eq('id', leagueId)
+    .limit(1)
+
+  const createdBy = (leagueRows as unknown as { created_by: string }[] | null)?.[0]?.created_by
+  if (createdBy !== user.id) {
+    return { success: false, error: 'Only the league creator can remove members.' }
+  }
+
+  const { error } = await supabase
+    .from('league_memberships')
+    .delete()
+    .eq('league_id', leagueId)
+    .eq('user_id', targetUserId)
+
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath(`/leagues/${leagueId}`)
+  return { success: true }
+}
+
 // ─── leaveLeague ──────────────────────────────────────────────────────────────
 
 export async function leaveLeague(

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { leaveLeague } from '@/app/leagues/actions'
+import { leaveLeague, removeMember } from '@/app/leagues/actions'
 import type { MemberInfo } from '@/app/leagues/[id]/page'
 
 interface LeagueRow {
@@ -70,49 +70,115 @@ function MemberRow({
   member,
   leagueId,
   currentUserId,
+  isCreator,
+  isOwner,
   isPastDeadline,
 }: {
   member: MemberInfo
   leagueId: number
   currentUserId: string
+  isCreator: boolean   // current user is the league creator
+  isOwner: boolean     // this member is the league creator
   isPastDeadline: boolean
 }) {
+  const router = useRouter()
   const isMe = member.user_id === currentUserId
+  const canRemove = isCreator && !isMe
+
+  const [confirmRemove, setConfirmRemove] = useState(false)
+  const [removing, setRemoving] = useState(false)
+  const [removeError, setRemoveError] = useState<string | null>(null)
+
+  const handleRemove = async () => {
+    setRemoving(true)
+    setRemoveError(null)
+    const result = await removeMember(leagueId, member.user_id)
+    setRemoving(false)
+    if (result.success) {
+      router.refresh()
+    } else {
+      setRemoveError(result.error ?? 'Could not remove member.')
+      setConfirmRemove(false)
+    }
+  }
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-gray-800/30 hover:bg-gray-800/50 transition-colors">
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-sm text-white truncate">{member.display_name}</span>
-          {isMe && (
-            <span className="text-xs bg-blue-900/50 text-blue-300 border border-blue-700 px-1.5 py-0.5 rounded-full shrink-0">
-              You
-            </span>
-          )}
+    <div className="rounded-lg bg-gray-800/30 hover:bg-gray-800/50 transition-colors px-4 py-3">
+      <div className="flex items-center gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-medium text-sm text-white truncate">{member.display_name}</span>
+            {isOwner && (
+              <span className="text-xs bg-amber-900/40 text-amber-300 border border-amber-700 px-1.5 py-0.5 rounded-full shrink-0">
+                Owner
+              </span>
+            )}
+            {isMe && (
+              <span className="text-xs bg-blue-900/50 text-blue-300 border border-blue-700 px-1.5 py-0.5 rounded-full shrink-0">
+                You
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-xs text-gray-600">Group</span>
+            <CompletionPill value={member.group_count} total={72} />
+            <span className="text-xs text-gray-600">KO</span>
+            <CompletionPill value={member.knockout_count} total={32} />
+            <span className="text-xs text-gray-600">Awards</span>
+            <CompletionPill value={member.awards_count} total={5} />
+          </div>
         </div>
-        <div className="flex items-center gap-2 mt-1">
-          <span className="text-xs text-gray-600">Group</span>
-          <CompletionPill value={member.group_count} total={72} />
-          <span className="text-xs text-gray-600">KO</span>
-          <CompletionPill value={member.knockout_count} total={32} />
-          <span className="text-xs text-gray-600">Awards</span>
-          <CompletionPill value={member.awards_count} total={5} />
-        </div>
-      </div>
-      <div className="shrink-0">
-        {isPastDeadline
-          ? (
+
+        <div className="shrink-0 flex items-center gap-2">
+          {isPastDeadline && (
             <Link
               href={`/leagues/${leagueId}/members/${member.user_id}`}
               className="rounded-lg border border-gray-600 hover:border-gray-400 px-3 py-1.5 text-xs font-medium text-gray-300 hover:text-white transition-colors"
             >
               View Predictions
             </Link>
-          )
-          : (
+          )}
+          {!isPastDeadline && !canRemove && (
             <span className="text-xs text-gray-600 italic">Visible after deadline</span>
           )}
+          {canRemove && !confirmRemove && (
+            <button
+              onClick={() => setConfirmRemove(true)}
+              className="rounded px-2 py-1 text-xs text-gray-600 hover:text-red-400 hover:bg-red-900/20 transition-colors"
+              title={`Remove ${member.display_name}`}
+            >
+              ✕
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Inline remove confirmation */}
+      {confirmRemove && (
+        <div className="mt-3 pt-3 border-t border-gray-700">
+          {removeError && (
+            <p className="text-red-400 text-xs mb-2">{removeError}</p>
+          )}
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-gray-400">
+              Remove <span className="text-white font-medium">{member.display_name}</span> from this league?
+            </span>
+            <button
+              onClick={() => { setConfirmRemove(false); setRemoveError(null) }}
+              className="text-xs text-gray-500 hover:text-white transition-colors shrink-0"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleRemove}
+              disabled={removing}
+              className="rounded bg-red-700 hover:bg-red-600 disabled:opacity-50 px-3 py-1 text-xs font-medium transition-colors shrink-0"
+            >
+              {removing ? 'Removing…' : 'Remove'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -166,6 +232,8 @@ export default function LeagueDetail({ league, members, currentUserId, isPastDea
               member={m}
               leagueId={league.id}
               currentUserId={currentUserId}
+              isCreator={isCreator}
+              isOwner={m.user_id === league.created_by}
               isPastDeadline={isPastDeadline}
             />
           ))}
