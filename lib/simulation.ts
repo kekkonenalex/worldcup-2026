@@ -41,6 +41,12 @@ export type TeamInput = {
   group_letter: string
 }
 
+export type ActualResultInput = {
+  match_id: number
+  home_score: number
+  away_score: number
+}
+
 export type ThirdPlaceResult = {
   advancing: TeamStanding[]  // top 8
   eliminated: TeamStanding[] // bottom 4
@@ -198,6 +204,33 @@ export function computeGroupStandings(
   finalOrder.forEach((s, idx) => { s.position = idx + 1 })
 
   return finalOrder
+}
+
+// ─── computeActualStandings ───────────────────────────────────────────────────
+// Variant for actual results — silently skips matches without a recorded result.
+
+export function computeActualStandings(
+  groupLetter: string,
+  matches: MatchInput[],
+  results: ActualResultInput[],
+  teams: TeamInput[]
+): TeamStanding[] {
+  const resultMap = new Map<number, ActualResultInput>()
+  for (const r of results) resultMap.set(r.match_id, r)
+
+  // Only include matches that have a result
+  const matchesWithResults = matches.filter(m => resultMap.has(m.id))
+
+  const predictions: PredictionInput[] = matchesWithResults.map(m => {
+    const r = resultMap.get(m.id)!
+    return {
+      match_id: m.id,
+      predicted_home_score: r.home_score,
+      predicted_away_score: r.away_score,
+    }
+  })
+
+  return computeGroupStandings(groupLetter, matchesWithResults, predictions, teams)
 }
 
 // ─── rankThirdPlaceTeams ──────────────────────────────────────────────────────

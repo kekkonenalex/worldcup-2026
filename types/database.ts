@@ -2,6 +2,7 @@ export interface Profile {
   id: string
   display_name: string
   password_set: boolean
+  is_admin: boolean
   created_at: string
 }
 
@@ -26,6 +27,7 @@ export interface Match {
   scheduled_at: string | null
   home_score: number | null
   away_score: number | null
+  winner_team_id: number | null
   status: MatchStatus
 }
 

@@ -239,6 +239,16 @@ export default async function DashboardPage() {
           )}
         </div>
 
+        {/* Admin panel link */}
+        {profile?.is_admin && (
+          <Link
+            href="/admin"
+            className="block w-full text-center rounded-xl px-4 py-3.5 font-semibold text-base transition-colors mb-5 bg-amber-700 hover:bg-amber-600 text-white"
+          >
+            Admin: Manage Match Results →
+          </Link>
+        )}
+
         <div className="flex justify-center">
           <SignOutButton />
         </div>
