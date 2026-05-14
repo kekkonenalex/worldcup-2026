@@ -1,6 +1,7 @@
 export interface Profile {
   id: string
   display_name: string
+  password_set: boolean
   created_at: string
 }
 

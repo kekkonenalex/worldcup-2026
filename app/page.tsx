@@ -7,7 +7,7 @@ const STEPS = [
   {
     n: '1',
     title: 'Sign in with email',
-    body: 'No password needed — just your email. A magic link signs you in instantly.',
+    body: 'No password needed on your first visit — just your email. A sign-in link is sent to you instantly.',
   },
   {
     n: '2',
