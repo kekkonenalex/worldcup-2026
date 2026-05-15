@@ -19,7 +19,8 @@
       "Bash(Remove-Item -Recurse -Force .next -ErrorAction SilentlyContinue)",
       "Bash(npx supabase *)",
       "Bash(npx tsc *)",
-      "Bash(npx tsx *)"
+      "Bash(npx tsx *)",
+      "PowerShell(New-Item *)"
     ]
   }
 }

@@ -1,26 +1,91 @@
 @import "tailwindcss";
 
+/* ── Design tokens ──────────────────────────────────────────────────────────── */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Backgrounds */
+  --bg-base: #0A0A0B;
+  --bg-elevated: #161618;
+  --bg-card: #1C1C1F;
+  --bg-card-hover: #232327;
+
+  /* Borders */
+  --border-subtle: #2A2A2E;
+  --border-strong: #3A3A3F;
+  --border-dashed: #4A4A50;
+
+  /* Text */
+  --text-primary: #FFFFFF;
+  --text-secondary: #B8B8BD;
+  --text-muted: #7A7A82;
+
+  /* Accent */
+  --accent: #FACC15;
+  --accent-hover: #EAB308;
+  --accent-foreground: #0A0A0B;
+
+  /* Status */
+  --status-hit: #FACC15;
+  --status-miss: #6B7280;
+  --status-pending: #9CA3AF;
+  --status-live: #EF4444;
+
+  /* Effects */
+  --ring-accent: 0 0 0 2px rgba(250, 204, 21, 0.4);
 }
+
+/* ── Tailwind v4 theme extensions ───────────────────────────────────────────── */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Colors */
+  --color-bg-base: var(--bg-base);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-bg-card: var(--bg-card);
+  --color-bg-card-hover: var(--bg-card-hover);
+
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+  --color-border-dashed: var(--border-dashed);
+
+  --color-fg-primary: var(--text-primary);
+  --color-fg-secondary: var(--text-secondary);
+  --color-fg-muted: var(--text-muted);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-foreground);
+
+  --color-status-hit: var(--status-hit);
+  --color-status-miss: var(--status-miss);
+  --color-status-pending: var(--status-pending);
+  --color-status-live: var(--status-live);
+
+  /* Font families — resolved from CSS vars set by next/font on <html> */
+  --font-display: var(--font-bebas), sans-serif;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+
+  /* Border radius */
+  --radius-card: 12px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* ── Base styles ────────────────────────────────────────────────────────────── */
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg-base);
+  color: var(--text-primary);
 }
+
+/* ── Background watermark ───────────────────────────────────────────────────── */
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 800px 600px at 50% 30%, rgba(250, 204, 21, 0.04), transparent 70%),
+    radial-gradient(ellipse 600px 400px at 50% 70%, rgba(250, 204, 21, 0.02), transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+body > * { position: relative; z-index: 1; }
