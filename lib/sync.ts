@@ -18,8 +18,9 @@ const TEAM_ALIASES: Record<string, string> = {
   'Czech Republic': 'Czechia',
 }
 
-export function normalizeTeamName(name: string): string {
-  return TEAM_ALIASES[name] ?? name
+export function normalizeTeamName(s: string | null | undefined): string {
+  if (!s) return '';
+  // rest of existing logic...
 }
 
 // Decompose diacritics and strip combining characters, then normalize aliases.
@@ -229,8 +230,4 @@ export async function syncMatchResults(apiKey: string): Promise<SyncResult> {
   }
 
   return { updated, errors }
-}
-export function normalizeTeamName(s: string | null | undefined): string {
-  if (!s) return '';
-  // rest of existing logic...
 }
