@@ -3,7 +3,22 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { isPastDeadline } from '@/lib/config'
 import LeagueDetail from '@/components/LeagueDetail'
+import LeaderboardTable, { type LeaderboardBreakdown, type LeaderboardRow } from '@/components/leaderboard/LeaderboardTable'
+import { getAllUserScores } from '@/lib/scoring-server'
+import { rankUsers, type UserScoreBreakdown } from '@/lib/scoring'
 import type { AwardPrediction } from '@/types/database'
+
+function toLeaderboardBreakdown(b: UserScoreBreakdown): LeaderboardBreakdown {
+  return {
+    groupTotal: b.groupTotal,
+    knockoutTotal: b.knockoutTotal,
+    topFourBonus: b.topFourBonus,
+    awardsTotal: b.awardsTotal,
+    awardsBreakdown: b.awardsBreakdown,
+    total: b.total,
+    tiebreakers: b.tiebreakers,
+  }
+}
 
 export type MemberInfo = {
   user_id: string
@@ -80,15 +95,17 @@ export default async function LeagueDetailPage({
     profileMap.set(p.id, p.display_name)
   }
 
-  // Fetch prediction data in parallel
+  // Fetch prediction data + all scores in parallel
   const [
     { data: groupPredRows },
     { data: koPredRows },
     { data: awardRows },
+    allScores,
   ] = await Promise.all([
     supabase.from('group_predictions').select('user_id').in('user_id', memberIds),
     supabase.from('knockout_predictions').select('user_id').in('user_id', memberIds),
     supabase.from('award_predictions').select('*').in('user_id', memberIds),
+    getAllUserScores(supabase),
   ])
 
   // Count group predictions per user
@@ -127,6 +144,23 @@ export default async function LeagueDetailPage({
     return a.display_name.localeCompare(b.display_name)
   })
 
+  // League-scoped leaderboard: filter to members, re-rank within the league
+  const memberIdSet = new Set(memberIds)
+  const memberScores = allScores
+    .filter(s => memberIdSet.has(s.userId))
+    .map(s => ({ userId: s.userId, breakdown: s.breakdown }))
+
+  const leagueRanked = rankUsers(memberScores)
+  const leaderboardRows: LeaderboardRow[] = leagueRanked.map(r => {
+    const scoreEntry = allScores.find(s => s.userId === r.userId)
+    return {
+      userId: r.userId,
+      displayName: scoreEntry?.displayName ?? r.userId,
+      rank: r.rank,
+      breakdown: toLeaderboardBreakdown(r.breakdown),
+    }
+  })
+
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       <header className="px-4 pt-8 pb-4 max-w-3xl mx-auto">
@@ -143,6 +177,14 @@ export default async function LeagueDetailPage({
         currentUserId={user.id}
         isPastDeadline={isPastDeadline()}
       />
+
+      <div className="px-4 max-w-3xl mx-auto pb-16">
+        <h2 className="text-xl font-bold tracking-tight mb-4 mt-8">League Standings</h2>
+        <LeaderboardTable
+          rows={leaderboardRows}
+          emptyMessage="No scores yet — standings will appear once match results are entered."
+        />
+      </div>
     </div>
   )
 }

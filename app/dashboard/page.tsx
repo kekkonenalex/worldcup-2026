@@ -205,6 +205,14 @@ export default async function DashboardPage() {
           </div>
         )}
 
+        {/* Leaderboard */}
+        <Link
+          href="/leaderboard"
+          className="block w-full text-center rounded-xl px-4 py-3.5 font-semibold text-base transition-colors mb-5 bg-gray-900 border border-gray-800 hover:border-gray-600 text-gray-300 hover:text-white"
+        >
+          Global Leaderboard →
+        </Link>
+
         {/* Leagues section */}
         <div className="rounded-xl bg-gray-900 border border-gray-800 px-5 py-4 mb-5">
           <div className="flex items-center justify-between mb-3">
