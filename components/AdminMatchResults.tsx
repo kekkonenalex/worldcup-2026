@@ -264,6 +264,14 @@ export default function AdminMatchResults({ matches, teams }: Props) {
     }
   }
 
+  // ── Group completion (for TBD messages in knockout tabs) ──
+
+  const groupMatchesTotal = matches.filter(m => m.stage === 'group')
+  const groupMatchesWithScores = groupMatchesTotal.filter(
+    m => m.home_score != null && m.away_score != null
+  ).length
+  const groupComplete = groupMatchesWithScores === 72
+
   // ── Teams by group ──
 
   const teamsByGroup = new Map<string, AdminTeam[]>()
@@ -473,7 +481,11 @@ export default function AdminMatchResults({ matches, teams }: Props) {
                     </div>
                   )}
                   {!homeTeam || !awayTeam ? (
-                    <p className="text-xs text-gray-600">TBD — earlier round not yet complete</p>
+                    <p className="text-xs text-gray-600">
+                      {!groupComplete
+                        ? `TBD — ${groupMatchesWithScores}/72 group scores saved (need all 72 to populate R32)`
+                        : 'TBD — click Recompute Bracket to populate slots'}
+                    </p>
                   ) : null}
 
                   {st.error && <p className="text-xs text-red-400 mt-2">{st.error}</p>}

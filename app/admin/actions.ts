@@ -43,12 +43,16 @@ export async function saveGroupMatchResult(
   }
 
   const supabase = await createClient()
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from('matches')
     .update({ home_score: homeScore, away_score: awayScore, status } as never)
     .eq('id', matchId)
+    .select('id')
 
   if (error) return { success: false, error: error.message }
+  if (!updated || updated.length === 0) {
+    return { success: false, error: 'No rows updated — run the Phase 10 SQL migration and check admin RLS policy on matches' }
+  }
 
   if (status === 'finished') {
     await recomputeBracketCascade()
@@ -91,12 +95,16 @@ export async function saveKnockoutWinner(
 
   const newStatus = winnerTeamId != null ? 'finished' : 'scheduled'
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from('matches')
     .update({ winner_team_id: winnerTeamId, status: newStatus } as never)
     .eq('id', matchId)
+    .select('id')
 
   if (error) return { success: false, error: error.message }
+  if (!updated || updated.length === 0) {
+    return { success: false, error: 'No rows updated — run the Phase 10 SQL migration and check admin RLS policy on matches' }
+  }
 
   await recomputeBracketCascade()
   revalidatePath('/admin')
