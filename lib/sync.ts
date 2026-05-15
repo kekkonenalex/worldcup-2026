@@ -230,3 +230,7 @@ export async function syncMatchResults(apiKey: string): Promise<SyncResult> {
 
   return { updated, errors }
 }
+export function normalizeTeamName(s: string | null | undefined): string {
+  if (!s) return '';
+  // rest of existing logic...
+}
