@@ -18,7 +18,8 @@
       "Bash(xargs grep -l \"GenericSchema\")",
       "Bash(Remove-Item -Recurse -Force .next -ErrorAction SilentlyContinue)",
       "Bash(npx supabase *)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(npx tsx *)"
     ]
   }
 }
