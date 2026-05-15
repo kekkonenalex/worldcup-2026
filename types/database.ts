@@ -29,6 +29,7 @@ export interface Match {
   away_score: number | null
   winner_team_id: number | null
   status: MatchStatus
+  external_id: number | null
 }
 
 export interface GroupPrediction {

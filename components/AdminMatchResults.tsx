@@ -34,6 +34,7 @@ type LocalState = {
 interface Props {
   matches: AdminMatch[]
   teams: AdminTeam[]
+  hasSomeExternalIds: boolean
 }
 
 const GROUP_LETTERS = 'ABCDEFGHIJKL'.split('')
@@ -187,11 +188,15 @@ function GroupStandingsTable({ standings }: { standings: TeamStanding[] }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function AdminMatchResults({ matches, teams }: Props) {
+type SyncState = { status: 'idle' | 'loading' | 'success' | 'error'; message: string }
+
+export default function AdminMatchResults({ matches, teams, hasSomeExternalIds }: Props) {
   const router = useRouter()
   const [tab, setTab] = useState<Tab>('group')
   const [states, setStates] = useState<Record<number, LocalState>>(() => initStates(matches))
   const [recomputing, setRecomputing] = useState(false)
+  const [bootstrapState, setBootstrapState] = useState<SyncState>({ status: 'idle', message: '' })
+  const [syncState, setSyncState] = useState<SyncState>({ status: 'idle', message: '' })
   const timers = useRef<Record<number, ReturnType<typeof setTimeout>>>({})
 
   const update = useCallback((id: number, patch: Partial<LocalState>) => {
@@ -249,6 +254,40 @@ export default function AdminMatchResults({ matches, teams }: Props) {
     router.refresh()
   }
 
+  const handleBootstrap = async () => {
+    setBootstrapState({ status: 'loading', message: '' })
+    try {
+      const res = await fetch('/api/admin/sync-bootstrap', { method: 'POST' })
+      const body = await res.json() as { bootstrapped?: number; errors?: string[]; error?: string }
+      if (!res.ok) {
+        setBootstrapState({ status: 'error', message: body.error ?? 'Unknown error' })
+      } else {
+        const errs = body.errors?.length ? ` (${body.errors.length} errors)` : ''
+        setBootstrapState({ status: 'success', message: `Linked ${body.bootstrapped ?? 0} matches${errs}` })
+        router.refresh()
+      }
+    } catch (e) {
+      setBootstrapState({ status: 'error', message: String(e) })
+    }
+  }
+
+  const handleSyncNow = async () => {
+    setSyncState({ status: 'loading', message: '' })
+    try {
+      const res = await fetch('/api/admin/sync-now', { method: 'POST' })
+      const body = await res.json() as { updated?: number; errors?: string[]; error?: string }
+      if (!res.ok) {
+        setSyncState({ status: 'error', message: body.error ?? 'Unknown error' })
+      } else {
+        const errs = body.errors?.length ? ` (${body.errors.length} errors)` : ''
+        setSyncState({ status: 'success', message: `Updated ${body.updated ?? 0} matches${errs}` })
+        router.refresh()
+      }
+    } catch (e) {
+      setSyncState({ status: 'error', message: String(e) })
+    }
+  }
+
   // ── Counts ──
 
   const finishedByTab = new Map<Tab, number>()
@@ -289,19 +328,52 @@ export default function AdminMatchResults({ matches, teams }: Props) {
     <div className="max-w-5xl mx-auto px-4 pb-16">
 
       {/* Sticky bar */}
-      <div className="sticky top-0 z-10 bg-gray-950 border-b border-gray-800 py-3 mb-4 flex items-center justify-between">
+      <div className="sticky top-0 z-10 bg-gray-950 border-b border-gray-800 py-3 mb-4 flex items-center justify-between gap-2 flex-wrap">
         <span className="text-sm text-gray-400">
           <span className="font-semibold text-white tabular-nums">{totalFinished}</span>
           {' / 104 matches recorded as Finished'}
         </span>
-        <button
-          onClick={handleRecompute}
-          disabled={recomputing}
-          className="rounded-lg border border-gray-700 hover:border-gray-500 px-3 py-1.5 text-xs text-gray-400 hover:text-white disabled:opacity-50 transition-colors"
-        >
-          {recomputing ? 'Recomputing…' : '🔄 Recompute Bracket'}
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          {!hasSomeExternalIds ? (
+            <button
+              onClick={handleBootstrap}
+              disabled={bootstrapState.status === 'loading'}
+              className="rounded-lg border border-amber-700 hover:border-amber-500 px-3 py-1.5 text-xs text-amber-400 hover:text-amber-200 disabled:opacity-50 transition-colors"
+            >
+              {bootstrapState.status === 'loading' ? 'Bootstrapping…' : '🔗 Bootstrap External IDs'}
+            </button>
+          ) : (
+            <button
+              onClick={handleSyncNow}
+              disabled={syncState.status === 'loading'}
+              className="rounded-lg border border-blue-700 hover:border-blue-500 px-3 py-1.5 text-xs text-blue-400 hover:text-blue-200 disabled:opacity-50 transition-colors"
+            >
+              {syncState.status === 'loading' ? 'Syncing…' : '⬇️ Sync Now'}
+            </button>
+          )}
+          <button
+            onClick={handleRecompute}
+            disabled={recomputing}
+            className="rounded-lg border border-gray-700 hover:border-gray-500 px-3 py-1.5 text-xs text-gray-400 hover:text-white disabled:opacity-50 transition-colors"
+          >
+            {recomputing ? 'Recomputing…' : '🔄 Recompute Bracket'}
+          </button>
+        </div>
       </div>
+
+      {/* Sync feedback */}
+      {bootstrapState.status === 'success' && (
+        <p className="text-xs text-green-400 mb-3">{bootstrapState.message}</p>
+      )}
+      {bootstrapState.status === 'error' && (
+        <p className="text-xs text-red-400 mb-3">Bootstrap error: {bootstrapState.message}</p>
+      )}
+      {syncState.status === 'success' && (
+        <p className="text-xs text-green-400 mb-3">{syncState.message}</p>
+      )}
+      {syncState.status === 'error' && (
+        <p className="text-xs text-red-400 mb-3">Sync error: {syncState.message}</p>
+      )}
 
       {/* Tab bar */}
       <div className="flex gap-1 flex-wrap mb-6">

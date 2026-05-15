@@ -15,7 +15,7 @@ export default async function AdminPage() {
 
   const supabase = await createClient()
 
-  const [{ data: rawMatches }, { data: rawTeams }] = await Promise.all([
+  const [{ data: rawMatches }, { data: rawTeams }, { count: externalIdCount }] = await Promise.all([
     supabase
       .from('matches')
       .select(`
@@ -29,10 +29,15 @@ export default async function AdminPage() {
       .select('id, name, short_code, flag_emoji, group_letter')
       .order('group_letter')
       .order('name'),
+    supabase
+      .from('matches')
+      .select('id', { count: 'exact', head: true })
+      .not('external_id', 'is', null),
   ])
 
   const matches = (rawMatches ?? []) as unknown as AdminMatch[]
   const teams = (rawTeams ?? []) as unknown as AdminTeam[]
+  const hasSomeExternalIds = (externalIdCount ?? 0) > 0
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
@@ -44,7 +49,7 @@ export default async function AdminPage() {
         </p>
       </header>
 
-      <AdminMatchResults matches={matches} teams={teams} />
+      <AdminMatchResults matches={matches} teams={teams} hasSomeExternalIds={hasSomeExternalIds} />
     </div>
   )
 }
