@@ -19,8 +19,8 @@ const TEAM_ALIASES: Record<string, string> = {
 }
 
 export function normalizeTeamName(s: string | null | undefined): string {
-  if (!s) return '';
-  // rest of existing logic...
+  if (!s) return ''
+  return TEAM_ALIASES[s] ?? s
 }
 
 // Decompose diacritics and strip combining characters, then normalize aliases.
