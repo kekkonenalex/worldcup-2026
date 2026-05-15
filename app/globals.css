@@ -77,6 +77,20 @@ body {
 
 /* ── Background watermark ───────────────────────────────────────────────────── */
 
+/* ── Global form input styling ──────────────────────────────────────────────── */
+/* Excludes inputs inside .score-pill (ScoreInput transparent fields) */
+
+input:not([type='checkbox']):not([type='radio']):not(.score-pill-field),
+textarea:not(.score-pill-field),
+select:not(.score-pill-field) {
+  @apply bg-bg-elevated border border-border-subtle rounded-md px-3 py-2 text-fg-primary
+         focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent
+         placeholder:text-fg-muted;
+  width: 100%;
+}
+
+/* ── Background watermark ───────────────────────────────────────────────────── */
+
 body::before {
   content: '';
   position: fixed;

@@ -71,21 +71,21 @@ export default async function MemberPredictionsPage({
   const deadlinePassed = isPastDeadline()
   if (!deadlinePassed) {
     return (
-      <main className="min-h-screen bg-gray-950 text-white flex items-center justify-center px-4">
+      <div className="flex items-center justify-center min-h-[60vh] px-4">
         <div className="text-center max-w-md">
           <div className="text-4xl mb-4">🔒</div>
-          <h1 className="text-2xl font-bold mb-3">Predictions locked until deadline</h1>
-          <p className="text-gray-400 mb-6">
+          <h1 className="text-2xl font-bold text-fg-primary mb-3">Predictions locked until deadline</h1>
+          <p className="text-fg-muted mb-6">
             You&apos;ll be able to see each other&apos;s predictions once the prediction deadline has passed.
           </p>
           <Link
             href={`/leagues/${leagueId}`}
-            className="inline-block rounded-lg border border-gray-600 hover:border-gray-400 px-6 py-2.5 font-medium text-gray-300 hover:text-white transition-colors"
+            className="inline-block rounded-lg border border-dashed border-border-dashed text-fg-muted hover:text-fg-primary px-6 py-2.5 font-semibold uppercase tracking-wider text-sm transition-colors"
           >
             ← Back to {leagueName}
           </Link>
         </div>
-      </main>
+      </div>
     )
   }
 
@@ -240,13 +240,13 @@ export default async function MemberPredictionsPage({
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      <header className="px-4 pt-8 pb-4 max-w-3xl mx-auto">
-        <Link href={`/leagues/${leagueId}`} className="text-gray-500 hover:text-gray-300 text-sm">
-          ← Back to {leagueName}
+    <div className="pb-16">
+      <div className="mb-6">
+        <Link href={`/leagues/${leagueId}`} className="text-xs font-semibold uppercase tracking-wider text-fg-muted hover:text-fg-primary transition-colors">
+          ← {leagueName}
         </Link>
-        <h1 className="text-3xl font-bold tracking-tight mt-2">{subjectName}&apos;s Predictions</h1>
-      </header>
+        <h1 className="text-4xl font-display tracking-wide uppercase text-fg-primary mt-3 mb-1">{subjectName}&apos;s Picks</h1>
+      </div>
 
       <PredictionsSummary
         groupMatchSummaries={groupMatchSummaries}

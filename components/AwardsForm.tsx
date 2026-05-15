@@ -31,12 +31,12 @@ interface AwardCardProps {
 
 function AwardCard({ title, points, subtitle, children }: AwardCardProps) {
   return (
-    <div className="rounded-xl bg-gray-900 border border-gray-800 p-5">
+    <div className="rounded-card bg-bg-card border border-border-subtle p-5">
       <div className="flex items-baseline justify-between mb-1">
-        <h3 className="font-bold text-white">{title}</h3>
-        <span className="text-xs text-yellow-500 font-medium">{points}</span>
+        <h3 className="font-bold text-fg-primary">{title}</h3>
+        <span className="text-xs text-accent font-medium">{points}</span>
       </div>
-      <p className="text-xs text-gray-400 mb-4 leading-relaxed">{subtitle}</p>
+      <p className="text-xs text-fg-muted mb-4 leading-relaxed">{subtitle}</p>
       {children}
     </div>
   )
@@ -55,7 +55,7 @@ interface TextFieldProps {
 function TextField({ label, value, placeholder, disabled, onChange }: TextFieldProps) {
   return (
     <div>
-      <label className="block text-xs text-gray-400 mb-1.5">{label}</label>
+      <label className="block text-xs text-fg-muted mb-1.5">{label}</label>
       <input
         type="text"
         maxLength={80}
@@ -63,12 +63,7 @@ function TextField({ label, value, placeholder, disabled, onChange }: TextFieldP
         placeholder={placeholder ?? 'Player name...'}
         disabled={disabled}
         onChange={e => onChange(e.target.value)}
-        className={[
-          'w-full rounded-lg border px-3 py-2.5 text-sm bg-gray-800 text-white placeholder-gray-600',
-          'focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500',
-          'border-gray-700 transition-colors',
-          disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-gray-600',
-        ].join(' ')}
+        className={disabled ? 'opacity-50 cursor-not-allowed' : ''}
       />
     </div>
   )
@@ -80,9 +75,9 @@ function SaveIndicator({ status }: { status: SaveStatus }) {
   if (status === 'idle') return null
   const map: Record<SaveStatus, { cls: string; text: string }> = {
     idle: { cls: '', text: '' },
-    saving: { cls: 'text-blue-400', text: 'Saving…' },
+    saving: { cls: 'text-fg-muted', text: 'Saving…' },
     saved: { cls: 'text-green-400', text: '✓ Saved' },
-    error: { cls: 'text-red-400', text: '⚠ Save failed' },
+    error: { cls: 'text-status-live', text: '⚠ Save failed' },
   }
   const { cls, text } = map[status]
   return <span className={`text-xs font-medium ${cls}`}>{text}</span>
@@ -152,23 +147,23 @@ export default function AwardsForm({ initial, isLocked }: Props) {
 
       {/* Locked banner */}
       {isLocked && (
-        <div className="mb-6 rounded-lg bg-red-900/30 border border-red-800 px-4 py-3 flex items-center gap-2">
-          <span className="text-red-400 font-bold text-xs uppercase tracking-wide">Predictions Locked</span>
-          <span className="text-gray-400 text-sm">The tournament has started — no further changes allowed.</span>
+        <div className="mb-6 rounded-card bg-status-live/10 border border-status-live/30 px-4 py-3 flex items-center gap-2">
+          <span className="text-status-live font-bold text-xs uppercase tracking-wide">Predictions Locked</span>
+          <span className="text-fg-muted text-sm">The tournament has started — no further changes allowed.</span>
         </div>
       )}
 
       {/* Status bar */}
       <div className="mb-6 flex items-center justify-between">
-        <div className="text-sm text-gray-400">
-          <span className="text-white font-semibold tabular-nums">{completedCount}</span> / 5 awards predicted
+        <div className="text-sm text-fg-muted">
+          <span className="text-fg-primary font-semibold tabular-nums">{completedCount}</span> / 5 awards predicted
         </div>
         <SaveIndicator status={saveStatus} />
       </div>
 
       {/* Error message */}
       {errorMsg && (
-        <div className="mb-4 rounded-lg bg-red-900/20 border border-red-800 px-4 py-2.5 text-sm text-red-300">
+        <div className="mb-4 rounded-card bg-status-live/10 border border-status-live/30 px-4 py-2.5 text-sm text-status-live">
           {errorMsg}
         </div>
       )}
@@ -189,9 +184,9 @@ export default function AwardsForm({ initial, isLocked }: Props) {
               onChange={update('goldenBootPlayer')}
             />
             <div>
-              <label className="block text-xs text-gray-400 mb-1.5">
+              <label className="block text-xs text-fg-muted mb-1.5">
                 Predicted goal count
-                <span className="ml-2 text-gray-500 font-normal">
+                <span className="ml-2 font-normal">
                   — worth 10 separate bonus points if correct (independent of the player pick)
                 </span>
               </label>
@@ -208,12 +203,7 @@ export default function AwardsForm({ initial, isLocked }: Props) {
                   }
                 }}
                 placeholder="e.g. 8"
-                className={[
-                  'w-32 rounded-lg border px-3 py-2.5 text-sm bg-gray-800 text-white placeholder-gray-600',
-                  'focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500',
-                  'border-gray-700 transition-colors',
-                  isLocked ? 'opacity-50 cursor-not-allowed' : 'hover:border-gray-600',
-                ].join(' ')}
+                className={`!w-32 ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
               />
             </div>
           </div>
@@ -264,19 +254,19 @@ export default function AwardsForm({ initial, isLocked }: Props) {
       </div>
 
       {/* Sticky bottom nav */}
-      <div className="fixed bottom-0 inset-x-0 bg-gray-950/95 backdrop-blur border-t border-gray-800 px-4 py-3">
+      <div className="fixed bottom-0 inset-x-0 bg-bg-base/95 backdrop-blur border-t border-border-subtle px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center justify-between gap-3">
           <Link
             href="/predictions/knockout"
-            className="rounded-lg border border-gray-600 hover:border-gray-400 px-5 py-2.5 text-sm font-medium text-gray-300 hover:text-white transition-colors"
+            className="rounded-lg border border-dashed border-border-dashed text-fg-muted hover:text-fg-primary px-5 py-2.5 text-sm font-semibold uppercase tracking-wider transition-colors"
           >
-            ← Back to Knockout Bracket
+            ← Knockout Bracket
           </Link>
           <Link
             href="/predictions/summary"
-            className="rounded-lg bg-blue-600 hover:bg-blue-500 px-5 py-2.5 text-sm font-semibold transition-colors"
+            className="rounded-lg bg-accent text-accent-fg hover:bg-accent-hover px-5 py-2.5 text-sm font-semibold uppercase tracking-wider transition-colors"
           >
-            View My Predictions Summary →
+            Predictions Summary →
           </Link>
         </div>
       </div>

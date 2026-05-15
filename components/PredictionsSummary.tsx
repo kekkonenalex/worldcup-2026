@@ -36,26 +36,26 @@ function Section({
 }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
-    <div className="rounded-xl bg-gray-900 border border-gray-800 overflow-hidden">
+    <div className="rounded-card bg-bg-card border border-border-subtle overflow-hidden">
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-800/50 transition-colors"
+        className="w-full flex items-center justify-between px-5 py-4 hover:bg-bg-card-hover transition-colors"
       >
         <div className="flex items-center gap-3">
-          <span className={`text-sm font-medium ${badgeOk ? 'text-green-400' : 'text-yellow-400'}`}>
+          <span className={`text-sm font-medium ${badgeOk ? 'text-green-400' : 'text-amber-400'}`}>
             {badgeOk ? '✅' : '⚠'}
           </span>
-          <span className="font-semibold text-white">{title}</span>
+          <span className="font-semibold text-fg-primary">{title}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className={`text-xs px-2 py-0.5 rounded font-mono ${badgeOk ? 'bg-green-900/40 text-green-400' : 'bg-yellow-900/40 text-yellow-400'}`}>
+          <span className={`text-xs px-2 py-0.5 rounded font-mono ${badgeOk ? 'bg-green-900/40 text-green-400' : 'bg-amber-900/40 text-amber-400'}`}>
             {badge}
           </span>
-          <span className="text-gray-500 text-sm">{open ? '▲' : '▼'}</span>
+          <span className="text-fg-muted text-sm">{open ? '▲' : '▼'}</span>
         </div>
       </button>
       {open && (
-        <div className="px-5 pb-5 border-t border-gray-800">
+        <div className="px-5 pb-5 border-t border-border-subtle">
           {children}
         </div>
       )}
@@ -76,7 +76,7 @@ function GroupPredictionsSection({
 }) {
   if (viewOnly && groupCount === 0) {
     return (
-      <p className="mt-4 text-sm text-gray-500">
+      <p className="mt-4 text-sm text-fg-muted">
         This user hasn&apos;t submitted any group stage predictions yet.
       </p>
     )
@@ -91,25 +91,25 @@ function GroupPredictionsSection({
   return (
     <div className="mt-4 space-y-4">
       {viewOnly && groupCount !== undefined && groupCount > 0 && groupCount < 72 && (
-        <p className="text-sm text-yellow-400">{groupCount} / 72 group stage predictions submitted.</p>
+        <p className="text-sm text-amber-400">{groupCount} / 72 group stage predictions submitted.</p>
       )}
       {Array.from(byGroup.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([letter, matches]) => (
         <div key={letter}>
-          <div className="text-xs font-bold text-gray-500 uppercase mb-2">Group {letter}</div>
+          <div className="text-xs font-bold text-fg-muted uppercase mb-2">Group {letter}</div>
           <div className="space-y-1">
             {matches.map(m => (
               <div
                 key={m.match_number}
-                className={`flex items-center gap-2 text-sm px-3 py-2 rounded-lg ${m.home_score === null ? 'text-gray-600' : 'text-gray-200'}`}
+                className={`flex items-center gap-2 text-sm px-3 py-2 rounded-lg ${m.home_score === null ? 'text-fg-muted' : 'text-fg-secondary'}`}
               >
                 <span className="w-5 text-center shrink-0">{m.home_flag}</span>
-                <span className="w-8 text-xs text-gray-500 shrink-0">{m.home_code}</span>
-                <span className="flex-1 text-right text-gray-400 text-xs">{m.home_name}</span>
-                <span className="font-mono tabular-nums text-white mx-1 shrink-0 w-12 text-center">
+                <span className="w-8 text-xs text-fg-muted shrink-0">{m.home_code}</span>
+                <span className="flex-1 text-right text-fg-muted text-xs">{m.home_name}</span>
+                <span className="font-mono tabular-nums text-fg-primary mx-1 shrink-0 w-12 text-center">
                   {m.home_score !== null ? `${m.home_score} — ${m.away_score}` : '— vs —'}
                 </span>
-                <span className="flex-1 text-left text-gray-400 text-xs">{m.away_name}</span>
-                <span className="w-8 text-xs text-gray-500 shrink-0 text-right">{m.away_code}</span>
+                <span className="flex-1 text-left text-fg-muted text-xs">{m.away_name}</span>
+                <span className="w-8 text-xs text-fg-muted shrink-0 text-right">{m.away_code}</span>
                 <span className="w-5 text-center shrink-0">{m.away_flag}</span>
               </div>
             ))}
@@ -129,12 +129,12 @@ function QualifyingTeamsSection({ advancingTeams }: { advancingTeams: TeamStandi
 
   const TeamGrid = ({ teams, label, borderCls }: { teams: TeamStanding[]; label: string; borderCls: string }) => (
     <div className="mb-4">
-      <div className="text-xs text-gray-500 font-medium mb-2">{label}</div>
+      <div className="text-xs text-fg-muted font-medium mb-2">{label}</div>
       <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5">
         {teams.map(t => (
           <div key={t.team_id} className={`rounded border ${borderCls} px-2 py-1.5 text-center`}>
             <div className="text-base">{t.flag_emoji}</div>
-            <div className="text-xs font-medium text-gray-300 leading-tight">{t.short_code}</div>
+            <div className="text-xs font-medium text-fg-secondary leading-tight">{t.short_code}</div>
           </div>
         ))}
       </div>
@@ -145,7 +145,7 @@ function QualifyingTeamsSection({ advancingTeams }: { advancingTeams: TeamStandi
     <div className="mt-4">
       <TeamGrid teams={winners} label="Group Winners (12)" borderCls="border-green-700 bg-green-900/15" />
       <TeamGrid teams={runnersUp} label="Runners-up (12)" borderCls="border-green-800 bg-green-900/10" />
-      <TeamGrid teams={thirds} label="Best Third-place (8)" borderCls="border-yellow-700 bg-yellow-900/15" />
+      <TeamGrid teams={thirds} label="Best Third-place (8)" borderCls="border-amber-700 bg-amber-900/15" />
     </div>
   )
 }
@@ -163,7 +163,7 @@ function KnockoutSection({
 }) {
   if (resolvedMatches.length === 0) {
     return (
-      <p className="mt-4 text-sm text-gray-500">
+      <p className="mt-4 text-sm text-fg-muted">
         {viewOnly
           ? "This user hasn't started their knockout bracket yet."
           : 'Complete your group stage predictions to see the bracket.'}
@@ -183,13 +183,13 @@ function KnockoutSection({
   return (
     <div className="mt-4 space-y-6">
       {viewOnly && knockoutCount !== undefined && knockoutCount > 0 && knockoutCount < 32 && (
-        <p className="text-sm text-yellow-400">{knockoutCount} / 32 knockout picks made.</p>
+        <p className="text-sm text-amber-400">{knockoutCount} / 32 knockout picks made.</p>
       )}
       {STAGE_ORDER.map(stage => {
         const matches = stagesForTab(stage)
         return (
           <div key={stage}>
-            <div className="text-xs font-bold text-gray-500 uppercase mb-2">{STAGE_LABELS[stage]}</div>
+            <div className="text-xs font-bold text-fg-muted uppercase mb-2">{STAGE_LABELS[stage]}</div>
             <div className="space-y-1.5">
               {matches.map(m => {
                 const pickedA = m.user_pick_team_id !== null && m.user_pick_team_id === m.team_a?.team_id
@@ -197,18 +197,18 @@ function KnockoutSection({
                 const noPick = m.user_pick_team_id === null
 
                 return (
-                  <div key={m.match_number} className="flex items-center gap-2 text-sm px-3 py-2 rounded-lg bg-gray-800/40">
-                    <span className="text-xs text-gray-600 w-24 shrink-0">{m.label}</span>
-                    <span className={pickedA ? 'text-green-400 font-semibold' : 'text-gray-400'}>
+                  <div key={m.match_number} className="flex items-center gap-2 text-sm px-3 py-2 rounded-lg bg-bg-elevated/40">
+                    <span className="text-xs text-fg-muted w-24 shrink-0">{m.label}</span>
+                    <span className={pickedA ? 'text-accent font-semibold' : 'text-fg-muted'}>
                       {m.team_a ? `${m.team_a.flag_emoji} ${m.team_a.short_code}` : 'TBD'}
                     </span>
-                    {pickedA && <span className="text-green-500 text-xs">✓</span>}
-                    <span className="text-gray-600 text-xs">vs</span>
-                    {pickedB && <span className="text-green-500 text-xs">✓</span>}
-                    <span className={pickedB ? 'text-green-400 font-semibold' : 'text-gray-400'}>
+                    {pickedA && <span className="text-accent text-xs">✓</span>}
+                    <span className="text-fg-muted text-xs">vs</span>
+                    {pickedB && <span className="text-accent text-xs">✓</span>}
+                    <span className={pickedB ? 'text-accent font-semibold' : 'text-fg-muted'}>
                       {m.team_b ? `${m.team_b.flag_emoji} ${m.team_b.short_code}` : 'TBD'}
                     </span>
-                    {noPick && <span className="ml-auto text-xs text-gray-600">no pick</span>}
+                    {noPick && <span className="ml-auto text-xs text-fg-muted">no pick</span>}
                   </div>
                 )
               })}
@@ -232,7 +232,7 @@ function AwardsSection({ award, viewOnly }: { award: AwardPrediction | null; vie
   )
   if (viewOnly && allEmpty) {
     return (
-      <p className="mt-4 text-sm text-gray-500">
+      <p className="mt-4 text-sm text-fg-muted">
         This user hasn&apos;t submitted any award predictions yet.
       </p>
     )
@@ -249,9 +249,9 @@ function AwardsSection({ award, viewOnly }: { award: AwardPrediction | null; vie
   return (
     <div className="mt-4 space-y-2">
       {rows.map(({ label, value }) => (
-        <div key={label} className="flex items-center justify-between text-sm px-3 py-2.5 rounded-lg bg-gray-800/40">
-          <span className="text-gray-400">{label}</span>
-          <span className={value ? 'text-white font-medium' : 'text-gray-600 italic'}>
+        <div key={label} className="flex items-center justify-between text-sm px-3 py-2.5 rounded-lg bg-bg-elevated/40">
+          <span className="text-fg-muted">{label}</span>
+          <span className={value ? 'text-fg-primary font-medium' : 'text-fg-muted italic'}>
             {value || '(not predicted)'}
           </span>
         </div>
@@ -287,11 +287,11 @@ export default function PredictionsSummary({
       {!viewOnly && (
         allComplete
           ? (
-            <div className="mb-6 rounded-xl bg-green-900/25 border border-green-700 px-5 py-4 flex items-start gap-3">
+            <div className="mb-6 rounded-card bg-green-900/20 border border-green-700/50 px-5 py-4 flex items-start gap-3">
               <span className="text-2xl">✅</span>
               <div>
                 <p className="font-semibold text-green-300">All predictions submitted!</p>
-                <p className="text-sm text-gray-400 mt-0.5">
+                <p className="text-sm text-fg-muted mt-0.5">
                   {isLocked
                     ? 'Predictions are locked. Good luck!'
                     : `Locked at deadline: ${deadlineStr}`}
@@ -300,25 +300,25 @@ export default function PredictionsSummary({
             </div>
           )
           : (
-            <div className="mb-6 rounded-xl bg-yellow-900/20 border border-yellow-700 px-5 py-4">
-              <p className="font-semibold text-yellow-300 mb-2">⚠ Incomplete predictions</p>
+            <div className="mb-6 rounded-card bg-amber-900/10 border border-amber-700/50 px-5 py-4">
+              <p className="font-semibold text-amber-300 mb-2">⚠ Incomplete predictions</p>
               <ul className="space-y-1 text-sm">
                 {!groupComplete && (
                   <li className="flex items-center justify-between">
-                    <span className="text-gray-400">Group Stage: {groupCount}/72 predictions</span>
-                    <Link href="/predictions" className="text-blue-400 hover:underline text-xs">Fix →</Link>
+                    <span className="text-fg-muted">Group Stage: {groupCount}/72 predictions</span>
+                    <Link href="/predictions" className="text-accent hover:underline text-xs">Fix →</Link>
                   </li>
                 )}
                 {!knockoutComplete && groupComplete && (
                   <li className="flex items-center justify-between">
-                    <span className="text-gray-400">Knockout Bracket: {knockoutCount}/32 picks</span>
-                    <Link href="/predictions/knockout" className="text-blue-400 hover:underline text-xs">Fix →</Link>
+                    <span className="text-fg-muted">Knockout Bracket: {knockoutCount}/32 picks</span>
+                    <Link href="/predictions/knockout" className="text-accent hover:underline text-xs">Fix →</Link>
                   </li>
                 )}
                 {!awardsComplete && knockoutComplete && groupComplete && (
                   <li className="flex items-center justify-between">
-                    <span className="text-gray-400">Awards: {awardsCount}/5 fields</span>
-                    <Link href="/predictions/awards" className="text-blue-400 hover:underline text-xs">Fix →</Link>
+                    <span className="text-fg-muted">Awards: {awardsCount}/5 fields</span>
+                    <Link href="/predictions/awards" className="text-accent hover:underline text-xs">Fix →</Link>
                   </li>
                 )}
               </ul>
@@ -328,18 +328,18 @@ export default function PredictionsSummary({
 
       {/* ── viewOnly status bar ── */}
       {viewOnly && (
-        <div className="mb-5 text-sm text-gray-400">
-          {subjectName && <span className="font-medium text-white">{subjectName}</span>}
+        <div className="mb-5 text-sm text-fg-muted">
+          {subjectName && <span className="font-medium text-fg-primary">{subjectName}</span>}
           {subjectName && <span> has submitted: </span>}
-          <span className={groupCount === 0 ? 'text-gray-600' : groupComplete ? 'text-green-400' : 'text-yellow-400'}>
+          <span className={groupCount === 0 ? 'text-fg-muted' : groupComplete ? 'text-green-400' : 'text-amber-400'}>
             {groupCount}/72 group stage
           </span>
-          <span className="text-gray-700"> · </span>
-          <span className={knockoutCount === 0 ? 'text-gray-600' : knockoutComplete ? 'text-green-400' : 'text-yellow-400'}>
+          <span className="text-border-subtle"> · </span>
+          <span className={knockoutCount === 0 ? 'text-fg-muted' : knockoutComplete ? 'text-green-400' : 'text-amber-400'}>
             {knockoutCount}/32 knockout
           </span>
-          <span className="text-gray-700"> · </span>
-          <span className={awardsCount === 0 ? 'text-gray-600' : awardsComplete ? 'text-green-400' : 'text-yellow-400'}>
+          <span className="text-border-subtle"> · </span>
+          <span className={awardsCount === 0 ? 'text-fg-muted' : awardsComplete ? 'text-green-400' : 'text-amber-400'}>
             {awardsCount}/5 awards
           </span>
         </div>
@@ -386,23 +386,23 @@ export default function PredictionsSummary({
 
       {/* ── Bottom edit links (own predictions only) ── */}
       {!viewOnly && (
-        <div className="mt-8 pt-6 border-t border-gray-800 flex flex-col sm:flex-row gap-2 items-center justify-center flex-wrap">
+        <div className="mt-8 pt-6 border-t border-border-subtle flex flex-col sm:flex-row gap-2 items-center justify-center flex-wrap">
           {!groupComplete && (
-            <Link href="/predictions" className="rounded-lg border border-gray-600 hover:border-gray-400 px-4 py-2 text-sm font-medium text-gray-300 hover:text-white transition-colors">
+            <Link href="/predictions" className="rounded-lg border border-dashed border-border-dashed text-fg-muted hover:text-fg-primary px-4 py-2 text-sm font-semibold uppercase tracking-wider transition-colors">
               Edit Group Predictions →
             </Link>
           )}
           {groupComplete && !knockoutComplete && (
-            <Link href="/predictions/knockout" className="rounded-lg border border-gray-600 hover:border-gray-400 px-4 py-2 text-sm font-medium text-gray-300 hover:text-white transition-colors">
+            <Link href="/predictions/knockout" className="rounded-lg border border-dashed border-border-dashed text-fg-muted hover:text-fg-primary px-4 py-2 text-sm font-semibold uppercase tracking-wider transition-colors">
               Edit Knockout Bracket →
             </Link>
           )}
           {groupComplete && knockoutComplete && !awardsComplete && (
-            <Link href="/predictions/awards" className="rounded-lg border border-gray-600 hover:border-gray-400 px-4 py-2 text-sm font-medium text-gray-300 hover:text-white transition-colors">
+            <Link href="/predictions/awards" className="rounded-lg bg-accent text-accent-fg hover:bg-accent-hover px-4 py-2 text-sm font-semibold uppercase tracking-wider transition-colors">
               Complete Awards →
             </Link>
           )}
-          <Link href="/dashboard" className="rounded-lg border border-gray-700 hover:border-gray-500 px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors">
+          <Link href="/dashboard" className="rounded-lg border border-dashed border-border-dashed text-fg-muted hover:text-fg-primary px-4 py-2 text-sm font-semibold uppercase tracking-wider transition-colors">
             ← Dashboard
           </Link>
         </div>

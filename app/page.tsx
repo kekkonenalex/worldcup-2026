@@ -1,104 +1,109 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { timeUntilDeadline, isPastDeadline } from '@/lib/config'
+import { Card } from '@/components/ui/Card'
 
 const STEPS = [
-  {
-    n: '1',
-    title: 'Sign in with email',
-    body: 'No password needed on your first visit — just your email. A sign-in link is sent to you instantly.',
-  },
-  {
-    n: '2',
-    title: 'Submit your predictions',
-    body: 'Pick scores for all 72 group matches, fill in the entire knockout bracket, and call the tournament awards.',
-  },
-  {
-    n: '3',
-    title: 'Compete with friends',
-    body: 'Join a private league, share an invite code, and watch the leaderboard update as results come in.',
-  },
+  { n: '1', title: 'Sign in', body: 'No password needed on first visit — just your email. A sign-in link arrives instantly.' },
+  { n: '2', title: 'Submit predictions', body: 'Pick scores for all 72 group matches, fill the knockout bracket, and call the awards.' },
+  { n: '3', title: 'Compete', body: 'Join a private league, share an invite code, and watch the leaderboard update live.' },
+]
+
+const CARDS = [
+  { label: 'My Vault', icon: '🔐', desc: 'Your personal prediction history and score breakdown.', href: '/users/[me]' },
+  { label: 'My Leagues', icon: '🏅', desc: 'Compete in private leagues with friends and colleagues.', href: '/leagues' },
+  { label: 'Tournament Hub', icon: '🏆', desc: 'Live standings, bracket, golden boot, and more.', href: '/tournament' },
 ]
 
 export default async function Home() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-
-  if (user) {
-    redirect('/dashboard')
-  }
-
   const locked = isPastDeadline()
   const countdown = timeUntilDeadline()
 
   return (
-    <main className="min-h-screen bg-gray-950 text-white flex flex-col">
-
+    <div className="pb-16">
       {/* ── Hero ── */}
-      <section className="flex-1 flex flex-col items-center justify-center px-4 pt-20 pb-12 text-center">
-        <div className="inline-block rounded-full bg-blue-900/40 border border-blue-700 px-3 py-1 text-xs font-semibold text-blue-300 uppercase tracking-widest mb-6">
-          FIFA World Cup 2026
-        </div>
-
-        <h1 className="text-5xl sm:text-6xl font-bold tracking-tight leading-tight max-w-2xl mb-5">
-          World Cup 2026<br />Predictions
+      <section className="py-16 md:py-24 text-center max-w-3xl mx-auto">
+        <h1 className="text-5xl md:text-7xl font-display tracking-wide uppercase text-fg-primary mb-4 leading-none">
+          FIFA World Cup<br />2026 Predictions
         </h1>
-
-        <p className="text-lg sm:text-xl text-gray-400 max-w-xl mb-10">
+        <p className="text-fg-secondary text-lg mb-10 max-w-xl mx-auto">
           Compete with friends. Pick every match, every bracket, every award. The most accurate predictor wins.
         </p>
 
-        <Link
-          href="/login"
-          className="inline-block rounded-xl bg-blue-600 hover:bg-blue-500 px-8 py-3.5 font-semibold text-lg transition-colors"
-        >
-          Sign in to play →
-        </Link>
+        {user ? (
+          <div className="flex items-center justify-center gap-4 flex-wrap">
+            <Link href="/predictions" className="bg-accent text-accent-fg font-semibold uppercase tracking-wider rounded-lg px-6 py-3 hover:bg-accent-hover transition-colors text-sm">
+              Place Prediction
+            </Link>
+            <Link href="/leaderboard" className="border-2 border-dashed border-border-dashed text-fg-primary font-semibold uppercase tracking-wider rounded-lg px-6 py-3 hover:bg-bg-card-hover transition-colors text-sm">
+              View Leaderboard
+            </Link>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center gap-4 flex-wrap">
+            <Link href="/login" className="bg-accent text-accent-fg font-semibold uppercase tracking-wider rounded-lg px-6 py-3 hover:bg-accent-hover transition-colors text-sm">
+              Sign In to Play
+            </Link>
+            <Link href="/leaderboard" className="border-2 border-dashed border-border-dashed text-fg-primary font-semibold uppercase tracking-wider rounded-lg px-6 py-3 hover:bg-bg-card-hover transition-colors text-sm">
+              View Leaderboard
+            </Link>
+          </div>
+        )}
 
         {/* Deadline */}
-        <div className="mt-8 text-sm text-gray-500">
+        <div className="mt-8 text-sm text-fg-muted">
           {locked ? (
-            <span className="text-red-400 font-medium">Prediction deadline has passed.</span>
+            <span className="text-status-live font-medium">Prediction deadline has passed.</span>
           ) : (
-            <>
-              <span>Predictions lock on </span>
-              <span className="text-gray-300 font-medium">June 10, 2026 at 23:59 (Helsinki time)</span>
-              <span className="text-gray-600"> — </span>
-              <span className="tabular-nums text-gray-400">
-                {countdown.days}d {countdown.hours}h {countdown.minutes}m remaining
-              </span>
-            </>
+            <span className="tabular-nums">
+              Predictions close in{' '}
+              <span className="text-fg-primary font-semibold">{countdown.days}d {countdown.hours}h {countdown.minutes}m</span>
+            </span>
           )}
         </div>
       </section>
 
+      {/* ── Quick-nav cards (authenticated) ── */}
+      {user && (
+        <section className="mb-16">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto">
+            {CARDS.map(c => {
+              const href = c.href === '/users/[me]' ? `/users/${user.id}` : c.href
+              return (
+                <Link key={c.label} href={href} className="block group">
+                  <Card className="h-full hover:border-border-strong transition-colors group-hover:border-border-strong">
+                    <div className="text-3xl mb-3">{c.icon}</div>
+                    <h3 className="font-semibold text-fg-primary mb-1">{c.label}</h3>
+                    <p className="text-xs text-fg-muted leading-relaxed">{c.desc}</p>
+                  </Card>
+                </Link>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
       {/* ── How it works ── */}
-      <section className="px-4 pb-20 max-w-4xl mx-auto w-full">
-        <h2 className="text-center text-xs font-semibold uppercase tracking-widest text-gray-600 mb-8">
-          How it works
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {STEPS.map(step => (
-            <div
-              key={step.n}
-              className="rounded-xl bg-gray-900 border border-gray-800 px-5 py-5"
-            >
-              <div className="w-7 h-7 rounded-full bg-blue-900/50 border border-blue-700 flex items-center justify-center text-xs font-bold text-blue-300 mb-3">
-                {step.n}
-              </div>
-              <p className="font-semibold text-white mb-1">{step.title}</p>
-              <p className="text-sm text-gray-400 leading-relaxed">{step.body}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Footer ── */}
-      <footer className="text-center text-xs text-gray-700 pb-8 px-4">
-        Built with Next.js + Supabase. Not affiliated with FIFA.
-      </footer>
-
-    </main>
+      {!user && (
+        <section className="max-w-3xl mx-auto">
+          <p className="text-center text-xs font-semibold uppercase tracking-widest text-fg-muted mb-8">
+            How it works
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {STEPS.map(step => (
+              <Card key={step.n}>
+                <div className="w-7 h-7 rounded-full bg-accent/20 border border-accent/30 flex items-center justify-center text-xs font-bold text-accent mb-3">
+                  {step.n}
+                </div>
+                <p className="font-semibold text-fg-primary mb-1">{step.title}</p>
+                <p className="text-sm text-fg-muted leading-relaxed">{step.body}</p>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
   )
 }

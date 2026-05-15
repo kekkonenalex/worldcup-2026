@@ -169,19 +169,19 @@ export default function GroupStagePredictionForm({
   const progressPct = (predictionCount / 72) * 100
 
   return (
-    <div className="max-w-3xl mx-auto px-4 pb-16">
+    <div className="pb-16">
       {/* ── Sticky top bar ── */}
-      <div className="sticky top-0 z-20 bg-gray-950 border-b border-gray-800 py-3 -mx-4 px-4">
+      <div className="sticky top-0 z-20 bg-bg-base border-b border-border-subtle py-3">
         <div className="flex items-center justify-between gap-4">
           {/* Counter + progress */}
           <div className="flex-1 min-w-0">
             <div className="flex items-baseline gap-1.5 mb-1">
-              <span className="font-semibold text-white">{predictionCount}</span>
-              <span className="text-gray-500 text-sm">/ 72 predictions made</span>
+              <span className="font-semibold text-fg-primary">{predictionCount}</span>
+              <span className="text-fg-muted text-sm">/ 72 predictions made</span>
             </div>
-            <div className="h-1.5 bg-gray-800 rounded-full">
+            <div className="h-1.5 bg-bg-elevated rounded-full">
               <div
-                className="h-1.5 bg-blue-500 rounded-full transition-all duration-500"
+                className="h-1.5 bg-accent rounded-full transition-all duration-500"
                 style={{ width: `${progressPct}%` }}
               />
             </div>
@@ -190,18 +190,18 @@ export default function GroupStagePredictionForm({
           {/* Deadline / locked badge */}
           <div className="shrink-0 text-sm">
             {locked ? (
-              <span className="rounded-full bg-red-900/60 border border-red-700 px-3 py-1 text-red-300 font-semibold text-xs tracking-wide uppercase">
+              <span className="rounded-full bg-status-live/20 border border-status-live/50 px-3 py-1 text-status-live font-semibold text-xs tracking-wide uppercase">
                 Predictions locked
               </span>
             ) : countdown ? (
-              <span className="text-gray-400">
+              <span className="text-fg-muted">
                 Deadline in{' '}
-                <span className="text-white font-medium">
+                <span className="text-fg-primary font-medium">
                   {countdown.days}d {countdown.hours}h {countdown.minutes}m
                 </span>
               </span>
             ) : (
-              <span className="text-gray-600 text-xs">Loading…</span>
+              <span className="text-fg-muted text-xs">Loading…</span>
             )}
           </div>
         </div>
@@ -218,7 +218,7 @@ export default function GroupStagePredictionForm({
                 className={`shrink-0 w-8 h-8 rounded-lg text-sm font-semibold transition-colors ${
                   groupComplete
                     ? 'bg-green-800/60 text-green-300 border border-green-700'
-                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700'
+                    : 'bg-bg-elevated text-fg-secondary hover:bg-bg-card-hover border border-border-subtle'
                 }`}
               >
                 {letter}
@@ -246,12 +246,12 @@ export default function GroupStagePredictionForm({
             <section
               key={letter}
               id={`group-${letter}`}
-              className="scroll-mt-36 rounded-xl bg-gray-900 border border-gray-800 overflow-hidden"
+              className="scroll-mt-36 rounded-card bg-bg-card border border-border-subtle overflow-hidden"
             >
               {/* Group header */}
-              <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
+              <div className="px-4 py-3 border-b border-border-subtle flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-bold">
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-fg-primary">
                     Group {letter}
                     {groupComplete && (
                       <span className="ml-2 text-green-400 text-base">✓</span>
@@ -259,13 +259,13 @@ export default function GroupStagePredictionForm({
                   </h2>
                   <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
                     {teams.map(t => (
-                      <span key={t.id} className="text-xs text-gray-400">
+                      <span key={t.id} className="text-xs text-fg-muted">
                         {t.flag_emoji} {t.name}
                       </span>
                     ))}
                   </div>
                 </div>
-                <span className="text-xs text-gray-600 tabular-nums">
+                <span className="text-xs text-fg-muted tabular-nums">
                   {groupMatches.filter(m => isComplete(predictions.get(m.id))).length} / 6
                 </span>
               </div>
@@ -276,7 +276,7 @@ export default function GroupStagePredictionForm({
                   const entry = predictions.get(match.id)
                   const status = savingState.get(match.id) ?? 'idle'
                   const errMsg = saveErrors.get(match.id)
-                  const rowBg = idx % 2 === 0 ? 'bg-gray-900' : 'bg-gray-800/40'
+                  const rowBg = idx % 2 === 0 ? 'bg-bg-card' : 'bg-bg-elevated/60'
 
                   return (
                     <div
@@ -284,23 +284,23 @@ export default function GroupStagePredictionForm({
                       className={`${rowBg} px-3 py-2.5 flex items-center gap-2`}
                     >
                       {/* Match number */}
-                      <span className="text-xs text-gray-600 tabular-nums w-6 shrink-0 text-center">
+                      <span className="text-xs text-fg-muted tabular-nums w-6 shrink-0 text-center">
                         {match.match_number}
                       </span>
 
                       {/* Home team */}
                       <div className="flex-1 flex items-center justify-end gap-1.5 min-w-0">
-                        <span className="text-sm text-gray-200 truncate hidden sm:block">
+                        <span className="text-sm text-fg-secondary truncate hidden sm:block">
                           {match.home_team?.name ?? 'TBD'}
                         </span>
-                        <span className="text-sm text-gray-200 sm:hidden truncate">
+                        <span className="text-sm text-fg-secondary sm:hidden truncate">
                           {match.home_team?.short_code ?? '?'}
                         </span>
                         <span className="text-base shrink-0">{match.home_team?.flag_emoji ?? '🏳'}</span>
                       </div>
 
                       {/* Score inputs */}
-                      <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="flex items-center gap-1.5 shrink-0 score-pill-field">
                         <input
                           type="number"
                           min={0}
@@ -310,9 +310,9 @@ export default function GroupStagePredictionForm({
                           disabled={locked}
                           value={entry?.home_score ?? ''}
                           onChange={e => handleChange(match.id, 'home_score', e.target.value)}
-                          className="w-12 text-center rounded-lg bg-gray-800 border border-gray-700 text-white py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-default [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          className="score-pill-field w-12 text-center rounded-lg bg-bg-elevated border border-border-subtle text-fg-primary py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent disabled:opacity-50 disabled:cursor-default [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         />
-                        <span className="text-gray-500 text-sm select-none">—</span>
+                        <span className="text-fg-muted text-sm select-none">—</span>
                         <input
                           type="number"
                           min={0}
@@ -322,17 +322,17 @@ export default function GroupStagePredictionForm({
                           disabled={locked}
                           value={entry?.away_score ?? ''}
                           onChange={e => handleChange(match.id, 'away_score', e.target.value)}
-                          className="w-12 text-center rounded-lg bg-gray-800 border border-gray-700 text-white py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-default [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          className="score-pill-field w-12 text-center rounded-lg bg-bg-elevated border border-border-subtle text-fg-primary py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent disabled:opacity-50 disabled:cursor-default [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         />
                       </div>
 
                       {/* Away team */}
                       <div className="flex-1 flex items-center gap-1.5 min-w-0">
                         <span className="text-base shrink-0">{match.away_team?.flag_emoji ?? '🏳'}</span>
-                        <span className="text-sm text-gray-200 truncate hidden sm:block">
+                        <span className="text-sm text-fg-secondary truncate hidden sm:block">
                           {match.away_team?.name ?? 'TBD'}
                         </span>
-                        <span className="text-sm text-gray-200 sm:hidden truncate">
+                        <span className="text-sm text-fg-secondary sm:hidden truncate">
                           {match.away_team?.short_code ?? '?'}
                         </span>
                       </div>
@@ -351,18 +351,18 @@ export default function GroupStagePredictionForm({
       </div>
 
       {/* ── Review / continue button ── */}
-      <div className="mt-8 pt-6 border-t border-gray-800 text-center">
+      <div className="mt-8 pt-6 border-t border-border-subtle text-center">
         {predictionCount === 72 ? (
           <Link
             href="/predictions/review"
-            className="inline-block rounded-lg bg-green-600 hover:bg-green-500 px-8 py-3 font-semibold text-white transition-colors"
+            className="inline-block rounded-lg bg-accent text-accent-fg hover:bg-accent-hover px-8 py-3 font-semibold transition-colors"
           >
             Review my standings &amp; continue →
           </Link>
         ) : (
           <button
             disabled
-            className="rounded-lg bg-gray-800 text-gray-500 cursor-not-allowed px-8 py-3 font-semibold"
+            className="rounded-lg bg-bg-elevated text-fg-muted cursor-not-allowed px-8 py-3 font-semibold"
           >
             Complete all 72 predictions to continue ({predictionCount}/72 done)
           </button>

@@ -37,16 +37,14 @@ export default async function AwardsPage() {
   const isLocked = isPastDeadline()
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      <header className="px-4 pt-8 pb-4 max-w-2xl mx-auto">
-        <Link href="/predictions/knockout" className="text-gray-500 hover:text-gray-300 text-sm">
-          ← Back to Knockout Bracket
+    <div className="pb-16">
+      <div className="mb-6">
+        <Link href="/predictions/knockout" className="text-xs font-semibold uppercase tracking-wider text-fg-muted hover:text-fg-primary transition-colors">
+          ← Knockout Bracket
         </Link>
-        <h1 className="text-3xl font-bold tracking-tight mt-2">Tournament Awards</h1>
-        <p className="text-gray-400 mt-1">
-          Pick the players you think will win each award. Worth significant bonus points.
-        </p>
-      </header>
+        <h1 className="text-4xl font-display tracking-wide uppercase text-fg-primary mt-3 mb-1">Tournament Awards</h1>
+        <p className="text-fg-muted text-sm">Pick the players you think will win each award. Worth significant bonus points.</p>
+      </div>
 
       <AwardsForm initial={initial} isLocked={isLocked} />
     </div>

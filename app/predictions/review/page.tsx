@@ -51,23 +51,23 @@ export default async function ReviewPage() {
   // Not enough predictions — show incomplete prompt
   if (predictionCount < 72) {
     return (
-      <main className="min-h-screen bg-gray-950 text-white flex items-center justify-center px-4">
+      <div className="flex items-center justify-center min-h-[60vh] px-4">
         <div className="text-center max-w-md">
-          <h1 className="text-2xl font-bold mb-3">Predictions incomplete</h1>
-          <p className="text-gray-400 mb-2">
+          <h1 className="text-2xl font-bold text-fg-primary mb-3">Predictions incomplete</h1>
+          <p className="text-fg-muted mb-2">
             You need to predict all 72 group stage matches to review your standings.
           </p>
-          <p className="text-3xl font-bold text-blue-400 mb-8">
+          <p className="text-3xl font-bold text-accent mb-8">
             {predictionCount} / 72
           </p>
           <Link
             href="/predictions"
-            className="inline-block rounded-lg bg-blue-600 hover:bg-blue-500 px-6 py-2.5 font-semibold transition-colors"
+            className="inline-block rounded-lg bg-accent text-accent-fg px-6 py-2.5 font-semibold transition-colors hover:bg-accent-hover"
           >
             ← Back to predictions
           </Link>
         </div>
-      </main>
+      </div>
     )
   }
 
@@ -130,17 +130,17 @@ export default async function ReviewPage() {
   const advancingTeams = getAdvancingTeams(allGroupStandings, thirdPlaceResult)
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      <header className="px-4 pt-8 pb-4 max-w-5xl mx-auto">
-        <Link href="/predictions" className="text-gray-500 hover:text-gray-300 text-sm">
+    <div className="pb-16">
+      <div className="mb-6">
+        <Link href="/predictions" className="text-xs font-semibold uppercase tracking-wider text-fg-muted hover:text-fg-primary transition-colors">
           ← Adjust my predictions
         </Link>
-        <h1 className="text-3xl font-bold tracking-tight mt-2">Your Simulated Standings</h1>
-        <p className="text-gray-400 mt-1">
+        <h1 className="text-4xl font-display tracking-wide uppercase text-fg-primary mt-3 mb-1">Simulated Standings</h1>
+        <p className="text-fg-muted text-sm">
           Here is how the group stage would finish based on your predictions.
           You can adjust if anything looks off.
         </p>
-      </header>
+      </div>
 
       <StandingsReview
         groupStandings={allGroupStandings}
@@ -153,14 +153,14 @@ export default async function ReviewPage() {
 
 function ErrorPage({ message }: { message: string }) {
   return (
-    <main className="min-h-screen bg-gray-950 text-white flex items-center justify-center px-4">
+    <div className="flex items-center justify-center min-h-[60vh] px-4">
       <div className="text-center max-w-md">
-        <h1 className="text-2xl font-bold mb-3">Something went wrong</h1>
-        <p className="text-gray-400 mb-6">{message}</p>
-        <Link href="/predictions" className="text-blue-400 hover:underline">
+        <h1 className="text-2xl font-bold text-fg-primary mb-3">Something went wrong</h1>
+        <p className="text-fg-muted mb-6">{message}</p>
+        <Link href="/predictions" className="text-accent hover:underline">
           ← Back to predictions
         </Link>
       </div>
-    </main>
+    </div>
   )
 }

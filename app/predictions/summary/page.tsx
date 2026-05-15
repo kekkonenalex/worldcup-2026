@@ -203,13 +203,13 @@ export default async function SummaryPage() {
   const isLocked = isPastDeadline()
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      <header className="px-4 pt-8 pb-4 max-w-3xl mx-auto">
-        <Link href="/predictions/awards" className="text-gray-500 hover:text-gray-300 text-sm">
+    <div className="pb-16">
+      <div className="mb-6">
+        <Link href="/predictions/awards" className="text-xs font-semibold uppercase tracking-wider text-fg-muted hover:text-fg-primary transition-colors">
           ← Awards Predictions
         </Link>
-        <h1 className="text-3xl font-bold tracking-tight mt-2">Your Predictions Summary</h1>
-      </header>
+        <h1 className="text-4xl font-display tracking-wide uppercase text-fg-primary mt-3 mb-1">Predictions Summary</h1>
+      </div>
 
       <PredictionsSummary
         groupMatchSummaries={groupMatchSummaries}

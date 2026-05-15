@@ -26,13 +26,15 @@ export default async function AccountSetupPage({
   const initialDisplayName = profile?.display_name ?? emailPrefix
 
   return (
-    <main className="min-h-screen bg-gray-950 text-white flex items-center justify-center px-4">
+    <div className="min-h-[80vh] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        <AccountSetupForm
-          isReset={isReset}
-          initialDisplayName={initialDisplayName}
-        />
+        <div className="text-center mb-6">
+          <p className="font-display text-accent tracking-wide text-2xl">FIFA WORLD CUP 2026</p>
+        </div>
+        <div className="bg-bg-card border border-border-subtle rounded-card p-6">
+          <AccountSetupForm isReset={isReset} initialDisplayName={initialDisplayName} />
+        </div>
       </div>
-    </main>
+    </div>
   )
 }

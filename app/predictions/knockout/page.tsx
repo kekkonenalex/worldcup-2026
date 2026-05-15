@@ -136,18 +136,18 @@ export default async function KnockoutPage() {
   const isLocked = isPastDeadline()
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      <header className="px-4 pt-8 pb-4 max-w-5xl mx-auto">
-        <Link href="/predictions/review" className="text-gray-500 hover:text-gray-300 text-sm">
-          ← Back to Standings Review
+    <div className="pb-16">
+      <div className="mb-6">
+        <Link href="/predictions/review" className="text-xs font-semibold uppercase tracking-wider text-fg-muted hover:text-fg-primary transition-colors">
+          ← Standings Review
         </Link>
-        <h1 className="text-3xl font-bold tracking-tight mt-2">Knockout Bracket</h1>
-        <p className="text-gray-400 mt-1 max-w-2xl">
+        <h1 className="text-4xl font-display tracking-wide uppercase text-fg-primary mt-3 mb-1">Knockout Bracket</h1>
+        <p className="text-fg-muted text-sm max-w-2xl">
           Pick the winner of each match. Your bracket follows FIFA&apos;s official 2026 pairing
           rules — group winners face third-place qualifiers, and the bracket cascades through to
           the final at MetLife Stadium.
         </p>
-      </header>
+      </div>
 
       <KnockoutBracket
         resolvedMatches={resolvedMatches}
@@ -160,14 +160,14 @@ export default async function KnockoutPage() {
 
 function ErrorPage({ message }: { message: string }) {
   return (
-    <main className="min-h-screen bg-gray-950 text-white flex items-center justify-center px-4">
+    <div className="flex items-center justify-center min-h-[60vh] px-4">
       <div className="text-center max-w-md">
-        <h1 className="text-2xl font-bold mb-3">Something went wrong</h1>
-        <p className="text-gray-400 mb-6">{message}</p>
-        <Link href="/predictions" className="text-blue-400 hover:underline">
+        <h1 className="text-2xl font-bold text-fg-primary mb-3">Something went wrong</h1>
+        <p className="text-fg-muted mb-6">{message}</p>
+        <Link href="/predictions" className="text-accent hover:underline">
           ← Back to predictions
         </Link>
       </div>
-    </main>
+    </div>
   )
 }

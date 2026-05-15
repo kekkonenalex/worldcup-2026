@@ -1,0 +1,30 @@
+export type TeamBadgeProps = {
+  teamId?: string
+  name: string
+  abbreviation: string
+  flag?: string
+  size?: 'sm' | 'md' | 'lg'
+}
+
+const avatarSize = { sm: 'w-6 h-6 text-xs', md: 'w-8 h-8 text-sm', lg: 'w-10 h-10 text-base' }
+const textSize   = { sm: 'text-xs', md: 'text-sm', lg: 'text-base' }
+const gapSize    = { sm: 'gap-1.5', md: 'gap-2', lg: 'gap-2.5' }
+
+export function TeamBadge({ name, abbreviation, flag, size = 'md' }: TeamBadgeProps) {
+  return (
+    <div className={`inline-flex items-center ${gapSize[size]}`}>
+      <div
+        className={`${avatarSize[size]} rounded-full bg-bg-card border border-border-subtle flex items-center justify-center shrink-0 leading-none`}
+      >
+        {flag ? (
+          <span>{flag}</span>
+        ) : (
+          <span className="text-fg-muted font-semibold">{name[0]}</span>
+        )}
+      </div>
+      <span className={`${textSize[size]} font-semibold tracking-wider uppercase text-fg-primary`}>
+        {abbreviation}
+      </span>
+    </div>
+  )
+}

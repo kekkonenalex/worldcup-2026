@@ -40,14 +40,14 @@ export default async function AdminPage() {
   const hasSomeExternalIds = (externalIdCount ?? 0) > 0
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      <header className="px-4 pt-8 pb-4 max-w-5xl mx-auto">
-        <h1 className="text-3xl font-bold tracking-tight">Admin — Match Results</h1>
-        <p className="text-gray-400 mt-1 text-sm">
+    <div className="pb-16">
+      <div className="mb-6">
+        <h1 className="text-4xl font-display tracking-wide uppercase text-fg-primary mb-1">Admin — Match Results</h1>
+        <p className="text-fg-muted text-sm">
           Enter actual match results. Group stage results auto-populate the knockout bracket.
           Knockout winners cascade to the next round automatically.
         </p>
-      </header>
+      </div>
 
       <AdminMatchResults matches={matches} teams={teams} hasSomeExternalIds={hasSomeExternalIds} />
     </div>

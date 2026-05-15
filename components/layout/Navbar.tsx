@@ -20,12 +20,8 @@ export default async function Navbar() {
 
         {/* Logo */}
         <Link href={user ? '/dashboard' : '/'} className="shrink-0">
-          <span className="font-display text-accent tracking-wide uppercase leading-none text-xl md:text-2xl">
-            FIFA<br className="hidden sm:block md:hidden" />
-            <span className="hidden sm:inline md:hidden"> </span>
-            <span className="sm:hidden"> </span>
-            World Cup
-            <span className="text-fg-muted text-base ml-1">2026</span>
+          <span className="font-display text-accent tracking-wide text-xl md:text-2xl whitespace-nowrap">
+            FIFA WORLD CUP 2026
           </span>
         </Link>
 

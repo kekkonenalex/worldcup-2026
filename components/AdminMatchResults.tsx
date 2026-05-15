@@ -112,8 +112,8 @@ function StatusBadge({ status }: { status: MatchStatus }) {
   const cls = status === 'finished'
     ? 'bg-green-900/40 text-green-400 border-green-700'
     : status === 'live'
-    ? 'bg-yellow-900/40 text-yellow-400 border-yellow-700'
-    : 'bg-gray-800 text-gray-500 border-gray-700'
+    ? 'bg-amber-900/40 text-amber-400 border-amber-700'
+    : 'bg-bg-elevated text-fg-muted border-border-subtle'
   return (
     <span className={`text-xs px-1.5 py-0.5 rounded border font-medium ${cls}`}>
       {status}
@@ -130,14 +130,14 @@ function StatusToggle({
 }) {
   const opts: MatchStatus[] = ['scheduled', 'live', 'finished']
   return (
-    <div className="flex rounded overflow-hidden border border-gray-700 text-xs">
+    <div className="flex rounded overflow-hidden border border-border-subtle text-xs">
       {opts.map(o => (
         <button
           key={o}
           type="button"
           onClick={() => onChange(o)}
           className={`px-2 py-1 transition-colors capitalize ${
-            value === o ? 'bg-blue-700 text-white' : 'bg-gray-900 text-gray-500 hover:text-gray-300'
+            value === o ? 'bg-accent text-accent-fg' : 'bg-bg-card text-fg-muted hover:text-fg-primary'
           }`}
         >
           {o === 'scheduled' ? 'Sched.' : o === 'finished' ? 'Done' : 'Live'}
@@ -150,9 +150,9 @@ function StatusToggle({
 function GroupStandingsTable({ standings }: { standings: TeamStanding[] }) {
   return (
     <div className="overflow-x-auto mb-3">
-      <table className="w-full text-xs text-gray-400">
+      <table className="w-full text-xs text-fg-muted">
         <thead>
-          <tr className="border-b border-gray-800">
+          <tr className="border-b border-border-subtle">
             <th className="text-left py-1 pr-2 font-medium">Team</th>
             <th className="text-center px-1 font-medium">P</th>
             <th className="text-center px-1 font-medium">W</th>
@@ -161,12 +161,12 @@ function GroupStandingsTable({ standings }: { standings: TeamStanding[] }) {
             <th className="text-center px-1 font-medium">GF</th>
             <th className="text-center px-1 font-medium">GA</th>
             <th className="text-center px-1 font-medium">GD</th>
-            <th className="text-center px-1 font-medium text-white">Pts</th>
+            <th className="text-center px-1 font-medium text-accent">Pts</th>
           </tr>
         </thead>
         <tbody>
           {standings.map((s, i) => (
-            <tr key={s.team_id} className={`border-b border-gray-800/50 ${i < 2 ? 'text-green-400' : i === 2 ? 'text-yellow-500' : ''}`}>
+            <tr key={s.team_id} className={`border-b border-border-subtle/50 ${i < 2 ? 'text-green-400' : i === 2 ? 'text-amber-500' : ''}`}>
               <td className="py-1 pr-2 font-medium">
                 {s.flag_emoji} {s.short_code}
               </td>
@@ -177,7 +177,7 @@ function GroupStandingsTable({ standings }: { standings: TeamStanding[] }) {
               <td className="text-center px-1 tabular-nums">{s.goals_for}</td>
               <td className="text-center px-1 tabular-nums">{s.goals_against}</td>
               <td className="text-center px-1 tabular-nums">{s.goal_difference > 0 ? `+${s.goal_difference}` : s.goal_difference}</td>
-              <td className="text-center px-1 tabular-nums font-bold text-white">{s.points}</td>
+              <td className="text-center px-1 tabular-nums font-bold text-accent">{s.points}</td>
             </tr>
           ))}
         </tbody>
@@ -328,9 +328,9 @@ export default function AdminMatchResults({ matches, teams, hasSomeExternalIds }
     <div className="max-w-5xl mx-auto px-4 pb-16">
 
       {/* Sticky bar */}
-      <div className="sticky top-0 z-10 bg-gray-950 border-b border-gray-800 py-3 mb-4 flex items-center justify-between gap-2 flex-wrap">
-        <span className="text-sm text-gray-400">
-          <span className="font-semibold text-white tabular-nums">{totalFinished}</span>
+      <div className="sticky top-0 z-10 bg-bg-base border-b border-border-subtle py-3 mb-4 flex items-center justify-between gap-2 flex-wrap">
+        <span className="text-sm text-fg-muted">
+          <span className="font-semibold text-fg-primary tabular-nums">{totalFinished}</span>
           {' / 104 matches recorded as Finished'}
         </span>
         <div className="flex items-center gap-2 flex-wrap">
@@ -346,7 +346,7 @@ export default function AdminMatchResults({ matches, teams, hasSomeExternalIds }
             <button
               onClick={handleSyncNow}
               disabled={syncState.status === 'loading'}
-              className="rounded-lg border border-blue-700 hover:border-blue-500 px-3 py-1.5 text-xs text-blue-400 hover:text-blue-200 disabled:opacity-50 transition-colors"
+              className="rounded-lg border border-accent/50 hover:border-accent px-3 py-1.5 text-xs text-accent hover:text-accent-hover disabled:opacity-50 transition-colors"
             >
               {syncState.status === 'loading' ? 'Syncing…' : '⬇️ Sync Now'}
             </button>
@@ -354,7 +354,7 @@ export default function AdminMatchResults({ matches, teams, hasSomeExternalIds }
           <button
             onClick={handleRecompute}
             disabled={recomputing}
-            className="rounded-lg border border-gray-700 hover:border-gray-500 px-3 py-1.5 text-xs text-gray-400 hover:text-white disabled:opacity-50 transition-colors"
+            className="rounded-lg border border-border-subtle hover:border-border-strong px-3 py-1.5 text-xs text-fg-muted hover:text-fg-primary disabled:opacity-50 transition-colors"
           >
             {recomputing ? 'Recomputing…' : '🔄 Recompute Bracket'}
           </button>
@@ -366,13 +366,13 @@ export default function AdminMatchResults({ matches, teams, hasSomeExternalIds }
         <p className="text-xs text-green-400 mb-3">{bootstrapState.message}</p>
       )}
       {bootstrapState.status === 'error' && (
-        <p className="text-xs text-red-400 mb-3">Bootstrap error: {bootstrapState.message}</p>
+        <p className="text-xs text-status-live mb-3">Bootstrap error: {bootstrapState.message}</p>
       )}
       {syncState.status === 'success' && (
         <p className="text-xs text-green-400 mb-3">{syncState.message}</p>
       )}
       {syncState.status === 'error' && (
-        <p className="text-xs text-red-400 mb-3">Sync error: {syncState.message}</p>
+        <p className="text-xs text-status-live mb-3">Sync error: {syncState.message}</p>
       )}
 
       {/* Tab bar */}
@@ -387,13 +387,13 @@ export default function AdminMatchResults({ matches, teams, hasSomeExternalIds }
               onClick={() => setTab(t.key)}
               className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                 active
-                  ? 'bg-blue-700 text-white'
-                  : 'bg-gray-900 border border-gray-800 text-gray-400 hover:text-white hover:border-gray-600'
+                  ? 'bg-accent text-accent-fg'
+                  : 'bg-bg-card border border-border-subtle text-fg-muted hover:text-fg-primary hover:border-border-strong'
               }`}
             >
               {t.label}
               <span className={`text-xs font-mono tabular-nums ${
-                active ? 'text-blue-200' : fin === tot ? 'text-green-400' : 'text-gray-600'
+                active ? 'text-accent-fg/80' : fin === tot ? 'text-green-400' : 'text-fg-muted'
               }`}>
                 {fin}/{tot}
               </span>
@@ -410,12 +410,12 @@ export default function AdminMatchResults({ matches, teams, hasSomeExternalIds }
             const groupTeams = teamsByGroup.get(letter) ?? []
             const standings = computeLiveStandings(letter, groupMatches, states, groupTeams)
             return (
-              <div key={letter} className="rounded-xl bg-gray-900 border border-gray-800 overflow-hidden">
-                <div className="px-5 py-3 bg-gray-800/50 font-semibold text-sm">Group {letter}</div>
+              <div key={letter} className="rounded-card bg-bg-card border border-border-subtle overflow-hidden">
+                <div className="px-5 py-3 bg-bg-elevated/50 font-semibold text-sm text-fg-secondary">Group {letter}</div>
                 <div className="px-5 pt-4">
                   <GroupStandingsTable standings={standings} />
                 </div>
-                <div className="divide-y divide-gray-800">
+                <div className="divide-y divide-border-subtle">
                   {groupMatches.map(m => {
                     const st = states[m.id]
                     if (!st) return null
@@ -423,7 +423,7 @@ export default function AdminMatchResults({ matches, teams, hasSomeExternalIds }
                       <div key={m.id} className="px-5 py-3">
                         <div className="flex items-center gap-2 flex-wrap">
                           {/* Home */}
-                          <span className="text-sm text-gray-300 min-w-0 flex-1 text-right">
+                          <span className="text-sm text-fg-secondary min-w-0 flex-1 text-right">
                             {m.home_team?.flag_emoji} {m.home_team?.short_code ?? '?'}
                           </span>
 
@@ -432,28 +432,28 @@ export default function AdminMatchResults({ matches, teams, hasSomeExternalIds }
                             <input
                               type="number" min={0} max={20} value={st.homeScore}
                               onChange={e => onScoreChange(m.id, 'homeScore', e.target.value)}
-                              className="w-10 text-center rounded bg-gray-800 border border-gray-700 px-1 py-1 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500 [appearance:textfield]"
+                              className="score-pill-field w-10 text-center rounded bg-bg-elevated border border-border-subtle px-1 py-1 text-sm text-fg-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent [appearance:textfield]"
                             />
-                            <span className="text-gray-600 text-xs">—</span>
+                            <span className="text-fg-muted text-xs">—</span>
                             <input
                               type="number" min={0} max={20} value={st.awayScore}
                               onChange={e => onScoreChange(m.id, 'awayScore', e.target.value)}
-                              className="w-10 text-center rounded bg-gray-800 border border-gray-700 px-1 py-1 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500 [appearance:textfield]"
+                              className="score-pill-field w-10 text-center rounded bg-bg-elevated border border-border-subtle px-1 py-1 text-sm text-fg-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent [appearance:textfield]"
                             />
                           </div>
 
                           {/* Away */}
-                          <span className="text-sm text-gray-300 min-w-0 flex-1">
+                          <span className="text-sm text-fg-secondary min-w-0 flex-1">
                             {m.away_team?.short_code ?? '?'} {m.away_team?.flag_emoji}
                           </span>
 
                           {/* Status + saving */}
                           <div className="flex items-center gap-2 ml-auto shrink-0">
                             <StatusToggle value={st.status} onChange={s => onStatusChange(m.id, s)} />
-                            {st.saving && <span className="text-xs text-gray-600">saving…</span>}
+                            {st.saving && <span className="text-xs text-fg-muted">saving…</span>}
                           </div>
                         </div>
-                        {st.error && <p className="text-xs text-red-400 mt-1">{st.error}</p>}
+                        {st.error && <p className="text-xs text-status-live mt-1">{st.error}</p>}
                       </div>
                     )
                   })}
@@ -475,9 +475,9 @@ export default function AdminMatchResults({ matches, teams, hasSomeExternalIds }
             const matchDef = BRACKET_STRUCTURE.find(d => d.match_number === m.match_number)
 
             return (
-              <div key={m.id} className="rounded-xl bg-gray-900 border border-gray-800 overflow-hidden">
-                <div className="px-5 py-2.5 bg-gray-800/40 flex items-center justify-between">
-                  <span className="text-xs font-medium text-gray-500">
+              <div key={m.id} className="rounded-card bg-bg-card border border-border-subtle overflow-hidden">
+                <div className="px-5 py-2.5 bg-bg-elevated/40 flex items-center justify-between">
+                  <span className="text-xs font-medium text-fg-muted">
                     {matchDef?.label ?? `Match ${m.match_number}`}
                   </span>
                   <StatusBadge status={st.status} />
@@ -496,19 +496,19 @@ export default function AdminMatchResults({ matches, teams, hasSomeExternalIds }
                           isWinner
                             ? 'border-green-600 bg-green-900/20'
                             : team
-                            ? 'border-gray-700 bg-gray-800/40'
-                            : 'border-gray-800 bg-gray-900'
+                            ? 'border-border-subtle bg-bg-elevated/40'
+                            : 'border-border-subtle bg-bg-card'
                         }`}
                       >
                         {team ? (
                           <>
                             <div className="text-2xl mb-1">{team.flag_emoji}</div>
-                            <div className="text-sm font-semibold text-white">{team.short_code}</div>
-                            <div className="text-xs text-gray-500 truncate">{team.name}</div>
+                            <div className="text-sm font-semibold text-fg-primary">{team.short_code}</div>
+                            <div className="text-xs text-fg-muted truncate">{team.name}</div>
                             {isWinner && <div className="text-xs text-green-400 mt-1 font-medium">✓ Winner</div>}
                           </>
                         ) : (
-                          <div className="text-xs text-gray-600 py-2">TBD</div>
+                          <div className="text-xs text-fg-muted py-2">TBD</div>
                         )}
                       </div>
                     ))}
@@ -517,14 +517,14 @@ export default function AdminMatchResults({ matches, teams, hasSomeExternalIds }
                   {/* Winner selection */}
                   {homeTeam && awayTeam && (
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs text-gray-600 shrink-0">Set winner:</span>
+                      <span className="text-xs text-fg-muted shrink-0">Set winner:</span>
                       <button
                         onClick={() => onSetWinner(m.id, homeTeam.id)}
                         disabled={st.saving}
                         className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
                           st.winnerTeamId === homeTeam.id
                             ? 'bg-green-700 text-white'
-                            : 'border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500'
+                            : 'border border-border-subtle text-fg-muted hover:text-fg-primary hover:border-border-strong'
                         }`}
                       >
                         {homeTeam.flag_emoji} {homeTeam.short_code}
@@ -535,7 +535,7 @@ export default function AdminMatchResults({ matches, teams, hasSomeExternalIds }
                         className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
                           st.winnerTeamId === awayTeam.id
                             ? 'bg-green-700 text-white'
-                            : 'border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500'
+                            : 'border border-border-subtle text-fg-muted hover:text-fg-primary hover:border-border-strong'
                         }`}
                       >
                         {awayTeam.flag_emoji} {awayTeam.short_code}
@@ -544,23 +544,23 @@ export default function AdminMatchResults({ matches, teams, hasSomeExternalIds }
                         <button
                           onClick={() => onSetWinner(m.id, null)}
                           disabled={st.saving}
-                          className="rounded px-3 py-1 text-xs text-gray-600 hover:text-red-400 border border-gray-800 hover:border-gray-600 transition-colors"
+                          className="rounded px-3 py-1 text-xs text-fg-muted hover:text-status-live border border-border-subtle hover:border-border-strong transition-colors"
                         >
                           Clear
                         </button>
                       )}
-                      {st.saving && <span className="text-xs text-gray-600">saving…</span>}
+                      {st.saving && <span className="text-xs text-fg-muted">saving…</span>}
                     </div>
                   )}
                   {!homeTeam || !awayTeam ? (
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-fg-muted">
                       {!groupComplete
                         ? `TBD — ${groupMatchesWithScores}/72 group scores saved (need all 72 to populate R32)`
                         : 'TBD — click Recompute Bracket to populate slots'}
                     </p>
                   ) : null}
 
-                  {st.error && <p className="text-xs text-red-400 mt-2">{st.error}</p>}
+                  {st.error && <p className="text-xs text-status-live mt-2">{st.error}</p>}
                 </div>
               </div>
             )

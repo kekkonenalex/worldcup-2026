@@ -10,8 +10,8 @@ const LINKS = [
 export default function Footer() {
   return (
     <footer className="border-t border-border-subtle py-8 mt-16 text-center">
-      <p className="font-display text-accent tracking-wide uppercase text-lg mb-4">
-        FIFA World Cup
+      <p className="font-display text-accent tracking-wide text-lg mb-4">
+        FIFA WORLD CUP 2026 PREDICTIONS
       </p>
       <div className="flex items-center justify-center gap-4 mb-4 flex-wrap">
         {LINKS.map(l => (

@@ -3,22 +3,10 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getAllUserScores } from '@/lib/scoring-server'
 import { isPastDeadline } from '@/lib/config'
-import LeaderboardTable, { type LeaderboardBreakdown, type LeaderboardRow } from '@/components/leaderboard/LeaderboardTable'
+import { LeaderboardRow } from '@/components/ui/LeaderboardRow'
 import type { UserScoreBreakdown } from '@/lib/scoring'
 
 export const dynamic = 'force-dynamic'
-
-function toLeaderboardBreakdown(b: UserScoreBreakdown): LeaderboardBreakdown {
-  return {
-    groupTotal: b.groupTotal,
-    knockoutTotal: b.knockoutTotal,
-    topFourBonus: b.topFourBonus,
-    awardsTotal: b.awardsTotal,
-    awardsBreakdown: b.awardsBreakdown,
-    total: b.total,
-    tiebreakers: b.tiebreakers,
-  }
-}
 
 export default async function LeaderboardPage() {
   const supabase = await createClient()
@@ -28,35 +16,41 @@ export default async function LeaderboardPage() {
   const scores = await getAllUserScores(supabase)
   const locked = isPastDeadline()
 
-  const rows: LeaderboardRow[] = scores.map(s => ({
-    userId: s.userId,
-    displayName: s.displayName,
-    rank: s.rank,
-    breakdown: toLeaderboardBreakdown(s.breakdown),
-  }))
-
-  const hasResults = scores.some(s => s.breakdown.total > 0)
+  const hasResults = scores.some(s => (s.breakdown as UserScoreBreakdown).total > 0)
   const subtitle = !locked
-    ? 'Predictions still open — final scores will be calculated after the deadline.'
+    ? 'Predictions still open — final scores calculated after the deadline.'
     : hasResults
     ? 'Tournament in progress — scores update as match results are entered.'
-    : 'Deadline has passed — scores will appear once match results are entered.'
+    : 'Deadline has passed — scores appear once match results are entered.'
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      <header className="px-4 pt-8 pb-4 max-w-3xl mx-auto">
-        <Link href="/dashboard" className="text-gray-500 hover:text-gray-300 text-sm">
+    <div className="pb-16">
+      <div className="mb-8">
+        <Link href="/dashboard" className="text-xs font-semibold uppercase tracking-wider text-fg-muted hover:text-fg-primary transition-colors">
           ← Dashboard
         </Link>
-        <h1 className="text-3xl font-bold tracking-tight mt-2">Global Leaderboard</h1>
-        <p className="text-gray-400 mt-1 text-sm">{subtitle}</p>
-      </header>
+        <h1 className="text-5xl font-display tracking-wide uppercase text-fg-primary mt-3 mb-2">
+          Global Leaderboard
+        </h1>
+        <p className="text-fg-muted text-sm">{subtitle}</p>
+      </div>
 
-      <div className="max-w-3xl mx-auto px-4 pb-16">
-        <LeaderboardTable
-          rows={rows}
-          emptyMessage="No participants yet."
-        />
+      <div className="max-w-3xl space-y-2">
+        {scores.length === 0 ? (
+          <p className="text-fg-muted text-sm text-center py-8">No participants yet.</p>
+        ) : (
+          scores.map(s => (
+            <LeaderboardRow
+              key={s.userId}
+              rank={s.rank}
+              isCurrentUser={s.userId === user.id}
+              displayName={s.displayName}
+              avatarInitials={(s.displayName[0] ?? '?').toUpperCase()}
+              points={(s.breakdown as UserScoreBreakdown).total}
+              action={{ label: s.userId === user.id ? 'Edit Picks' : 'View Picks', href: `/users/${s.userId}` }}
+            />
+          ))
+        )}
       </div>
     </div>
   )
