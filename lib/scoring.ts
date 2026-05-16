@@ -31,8 +31,8 @@ const minRound = (a: KnockoutRound, b: KnockoutRound): KnockoutRound =>
 // ── Group match scoring ────────────────────────────────────────────────────────
 //
 // Points: 6 exact | 5 correct result+GD not exact | 3 correct result wrong GD | 0 wrong
-// Bonus +1 (on base 0 or 3 only): if a non-zero goal count matches (pred.home==actual.home>0
-//   OR pred.away==actual.away>0). Zero-vs-zero does not trigger the bonus.
+// Bonus +1 (on base 0 or 3 only): if either team's goal count matches (including 0).
+// Bonus never applies to exact scores (base 6) or correct-GD scores (base 5).
 
 export function scoreGroupMatch(
   pred: { home: number; away: number } | null,
@@ -46,8 +46,8 @@ export function scoreGroupMatch(
   const actualResult = Math.sign(actual.home - actual.away)
 
   const tallyBonus =
-    (pred.home === actual.home && actual.home > 0) ||
-    (pred.away === actual.away && actual.away > 0)
+    pred.home === actual.home ||
+    pred.away === actual.away
       ? 1
       : 0
 
@@ -140,36 +140,32 @@ export function getPredictedKnockoutPlacements(
 
 // ── Knockout scoring ───────────────────────────────────────────────────────────
 //
-// Per-team points: ROUND_POINTS[MIN(predictedRound, actualRound)].
-// Top-4 bonus: +25 per team where BOTH predicted ≥ SF AND actual ≥ SF.
-//   This covers all 4 top-4 teams (Champion, Runner-up, 3rd, 4th) without
-//   needing to distinguish exact positions — that distinction is only for
-//   tiebreakers, computed separately in computeUserScore.
+// Per-team points: cumulative sum of ROUND_POINTS for every round from R16 up
+// to MIN(predictedRound, actualRound). Top-4 bonus is computed separately in
+// computeUserScore using exact finish-position matching.
 
 export function scoreKnockoutForUser(
   predictedPlacements: Map<string, KnockoutRound>,
   actualPlacements: Map<string, KnockoutRound>,
-): { perTeam: Map<string, number>; basePoints: number; topFourBonus: number; total: number } {
+): { perTeam: Map<string, number>; basePoints: number; total: number } {
   const perTeam = new Map<string, number>()
   let basePoints = 0
-  let topFourBonus = 0
-  const SF_IDX = roundIndex('SF')
 
   for (const [teamKey, actualRound] of actualPlacements) {
     const predictedRound = predictedPlacements.get(teamKey)
     if (!predictedRound) continue
 
-    const scored = minRound(predictedRound, actualRound)
-    const pts = ROUND_POINTS[scored]
+    const cap = minRound(predictedRound, actualRound)
+    const capIdx = roundIndex(cap)
+    let pts = 0
+    for (let i = 0; i <= capIdx; i++) {
+      pts += ROUND_POINTS[ROUND_ORDER[i]]
+    }
     perTeam.set(teamKey, pts)
     basePoints += pts
-
-    if (roundIndex(predictedRound) >= SF_IDX && roundIndex(actualRound) >= SF_IDX) {
-      topFourBonus += TOP_FOUR_BONUS
-    }
   }
 
-  return { perTeam, basePoints, topFourBonus, total: basePoints + topFourBonus }
+  return { perTeam, basePoints, total: basePoints }
 }
 
 // ── Award scoring ──────────────────────────────────────────────────────────────
@@ -263,8 +259,47 @@ export function computeUserScore(input: {
   const predictedPlacements = getPredictedKnockoutPlacements(knockoutPredictions)
   const actualPlacements = getActualKnockoutPlacements(knockoutMatches)
 
-  const { perTeam: knockoutPerTeam, basePoints: knockoutTotal, topFourBonus } =
+  const { perTeam: knockoutPerTeam, basePoints: knockoutTotal } =
     scoreKnockoutForUser(predictedPlacements, actualPlacements)
+
+  // ── Top-4 positions (shared by bonus and tiebreakers) ──
+  const predictedChampionId =
+    [...predictedPlacements.entries()].find(([, r]) => r === 'Champion')?.[0] ?? null
+  const actualChampionId =
+    [...actualPlacements.entries()].find(([, r]) => r === 'Champion')?.[0] ?? null
+
+  const predictedRunnerUpId =
+    [...predictedPlacements.entries()].find(([, r]) => r === 'Final')?.[0] ?? null
+  const actualRunnerUpId =
+    [...actualPlacements.entries()].find(([, r]) => r === 'Final')?.[0] ?? null
+
+  const match103 = knockoutMatches.find(m => m.match_number === 103)
+  const actualThirdId = match103?.winner_team_id != null ? String(match103.winner_team_id) : null
+  const actualFourthId =
+    match103 && actualThirdId != null && match103.home_team_id != null && match103.away_team_id != null
+      ? (String(match103.home_team_id) === actualThirdId
+          ? String(match103.away_team_id)
+          : String(match103.home_team_id))
+      : null
+
+  const pred103Pick = knockoutPredictions.find(p => p.bracket_position === 103)
+  const predictedThirdId = pred103Pick != null ? String(pred103Pick.predicted_team_id) : null
+  // Predicted 4th = whichever SF-level team is not the predicted 3rd-place winner
+  const sfPredictedTeams = [...predictedPlacements.entries()]
+    .filter(([, r]) => r === 'SF')
+    .map(([k]) => k)
+  const predictedFourthId = sfPredictedTeams.find(t => t !== predictedThirdId) ?? null
+
+  // ── Top-4 bonus (exact finish-position matching, +25 per correct slot) ──
+  let topFourBonus = 0
+  if (predictedChampionId !== null && actualChampionId !== null && predictedChampionId === actualChampionId)
+    topFourBonus += TOP_FOUR_BONUS
+  if (predictedRunnerUpId !== null && actualRunnerUpId !== null && predictedRunnerUpId === actualRunnerUpId)
+    topFourBonus += TOP_FOUR_BONUS
+  if (predictedThirdId !== null && actualThirdId !== null && predictedThirdId === actualThirdId)
+    topFourBonus += TOP_FOUR_BONUS
+  if (predictedFourthId !== null && actualFourthId !== null && predictedFourthId === actualFourthId)
+    topFourBonus += TOP_FOUR_BONUS
 
   // ── Awards ──
   const awardsBreakdown = scoreAwardsForUser(awardPrediction, awardResult)
@@ -274,32 +309,14 @@ export function computeUserScore(input: {
   const total = groupTotal + knockoutTotal + topFourBonus + awardsTotal
 
   // ── Tiebreakers ──
-
-  // Gold: predicted champion == actual champion
-  const predictedChampionId =
-    [...predictedPlacements.entries()].find(([, r]) => r === 'Champion')?.[0] ?? null
-  const actualChampionId =
-    [...actualPlacements.entries()].find(([, r]) => r === 'Champion')?.[0] ?? null
   const gold: 0 | 1 =
     predictedChampionId !== null && actualChampionId !== null && predictedChampionId === actualChampionId
-      ? 1
-      : 0
+      ? 1 : 0
 
-  // Silver: predicted runner-up == actual runner-up (sole 'Final' entry in each map)
-  const predictedRunnerUpId =
-    [...predictedPlacements.entries()].find(([, r]) => r === 'Final')?.[0] ?? null
-  const actualRunnerUpId =
-    [...actualPlacements.entries()].find(([, r]) => r === 'Final')?.[0] ?? null
   const silver: 0 | 1 =
     predictedRunnerUpId !== null && actualRunnerUpId !== null && predictedRunnerUpId === actualRunnerUpId
-      ? 1
-      : 0
+      ? 1 : 0
 
-  // Bronze: predicted 3rd == actual 3rd (winner of match 103)
-  const match103 = knockoutMatches.find(m => m.match_number === 103)
-  const actualThirdId = match103?.winner_team_id != null ? String(match103.winner_team_id) : null
-  const pred103Pick = knockoutPredictions.find(p => p.bracket_position === 103)
-  const predictedThirdId = pred103Pick != null ? String(pred103Pick.predicted_team_id) : null
   const bronze: 0 | 1 =
     predictedThirdId !== null && actualThirdId !== null && predictedThirdId === actualThirdId ? 1 : 0
 

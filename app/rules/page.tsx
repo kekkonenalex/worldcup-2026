@@ -183,33 +183,38 @@ export default function RulesPage() {
           Knockout — per team
         </h3>
         <p className="text-sm text-fg-secondary mb-3">
-          You earn points for each team based on the{' '}
-          <span className="text-fg-primary font-semibold">furthest round</span> that you
-          predicted them to reach AND they actually reached — whichever comes first. Rounds
-          are not stacked: one score per team.
+          Points are{' '}
+          <span className="text-fg-primary font-semibold">cumulative</span>: you earn all
+          round scores up to the furthest round that you predicted AND the team actually
+          reached — whichever comes first. A team you correctly call to the Final earns you
+          6 + 8 + 10 + 15 = 39 pts.
         </p>
         <div className="bg-bg-card border border-border-subtle rounded-card px-5 py-1 mb-2">
           <ScoreRow
-            label="Correct Round of 32 pick"
-            points="6 pts"
-            sub="Team advances from R32 to R16"
+            label="Round of 32"
+            points="+6 pts"
+            sub="Cumulative total: 6 pts"
           />
           <ScoreRow
-            label="Correct Round of 16 pick"
-            points="8 pts"
-            sub="Team advances to Quarter-finals"
+            label="Round of 16"
+            points="+8 pts"
+            sub="Cumulative total: 14 pts"
           />
           <ScoreRow
-            label="Correct Quarter-final pick"
-            points="10 pts"
-            sub="Team advances to Semi-finals"
+            label="Quarter-finals"
+            points="+10 pts"
+            sub="Cumulative total: 24 pts"
           />
           <ScoreRow
-            label="Correct Semi-final pick"
-            points="15 pts"
-            sub="Team reaches the Final"
+            label="Semi-finals"
+            points="+15 pts"
+            sub="Cumulative total: 39 pts"
           />
-          <ScoreRow label="Correct champion" points="20 pts" />
+          <ScoreRow
+            label="Champion"
+            points="+20 pts"
+            sub="Cumulative total: 59 pts"
+          />
         </div>
         <div className="bg-bg-card border border-border-subtle rounded-card px-5 py-1 mb-8">
           <ScoreRow

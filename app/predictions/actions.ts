@@ -1,9 +1,16 @@
 'use server'
 
+import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { isPastDeadline, MAX_GOALS_PER_TEAM } from '@/lib/config'
 
 type SaveResult = { success: true } | { success: false; error: string }
+
+const savePredictionSchema = z.object({
+  matchId: z.number().int().positive(),
+  homeScore: z.number().int().min(0).max(MAX_GOALS_PER_TEAM),
+  awayScore: z.number().int().min(0).max(MAX_GOALS_PER_TEAM),
+})
 
 export async function savePrediction(
   matchId: number,
@@ -14,13 +21,11 @@ export async function savePrediction(
     return { success: false, error: 'Prediction deadline has passed' }
   }
 
-  if (
-    !Number.isInteger(matchId) || matchId <= 0 ||
-    !Number.isInteger(homeScore) || homeScore < 0 || homeScore > MAX_GOALS_PER_TEAM ||
-    !Number.isInteger(awayScore) || awayScore < 0 || awayScore > MAX_GOALS_PER_TEAM
-  ) {
+  const parsed = savePredictionSchema.safeParse({ matchId, homeScore, awayScore })
+  if (!parsed.success) {
     return { success: false, error: 'Invalid input' }
   }
+  const data = parsed.data
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -32,7 +37,7 @@ export async function savePrediction(
   const { data: match, error: matchError } = await supabase
     .from('matches')
     .select('id, stage')
-    .eq('id', matchId)
+    .eq('id', data.matchId)
     .eq('stage', 'group')
     .single()
 
@@ -44,9 +49,9 @@ export async function savePrediction(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     {
       user_id: user.id,
-      match_id: matchId,
-      predicted_home_score: homeScore,
-      predicted_away_score: awayScore,
+      match_id: data.matchId,
+      predicted_home_score: data.homeScore,
+      predicted_away_score: data.awayScore,
       updated_at: new Date().toISOString(),
     } as any,
     { onConflict: 'user_id,match_id' }

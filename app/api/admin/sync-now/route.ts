@@ -20,6 +20,7 @@ export async function POST() {
     const result = await syncMatchResults(apiKey)
     return NextResponse.json(result)
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 })
+    console.error('[admin] sync error:', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

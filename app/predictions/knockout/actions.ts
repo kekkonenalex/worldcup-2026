@@ -1,5 +1,6 @@
 'use server'
 
+import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import {
@@ -22,6 +23,11 @@ import type { MatchWithTeams, GroupPrediction, KnockoutPrediction } from '@/type
 
 const GROUP_LETTERS = 'ABCDEFGHIJKL'.split('')
 
+const saveKnockoutSchema = z.object({
+  matchNumber: z.number().int().min(73).max(104),
+  teamId: z.number().int().positive(),
+})
+
 type ActionResult =
   | { success: true; cleared_downstream: number[] }
   | { success: false; error: string }
@@ -40,10 +46,9 @@ export async function saveKnockoutPrediction(
     return { success: false, error: 'Predictions are locked — the tournament has started.' }
   }
 
-  // 3. Validate match number range
-  if (matchNumber < 73 || matchNumber > 104) {
-    return { success: false, error: 'Invalid match number.' }
-  }
+  // 3. Validate inputs
+  const parsed = saveKnockoutSchema.safeParse({ matchNumber, teamId })
+  if (!parsed.success) return { success: false, error: 'Invalid input.' }
 
   // 4. Re-run group simulation to confirm teamId is among the 32 advancing teams
   const { data: rawMatches, error: matchError } = await supabase

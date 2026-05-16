@@ -35,8 +35,11 @@ assert('exact match (2-1 vs 2-1) → 6',
 assert('correct result + GD, not exact (3-1 vs 2-0) → 5',
   5, scoreGroupMatch({ home: 3, away: 1 }, { home: 2, away: 0 }))
 
-assert('correct result, wrong GD (2-0 vs 1-0) → 3',
-  3, scoreGroupMatch({ home: 2, away: 0 }, { home: 1, away: 0 }))
+assert('correct result, wrong GD, zero away tally matches (2-0 vs 1-0) → 4',
+  4, scoreGroupMatch({ home: 2, away: 0 }, { home: 1, away: 0 }))
+
+assert('correct result, wrong GD, no tally match (2-0 vs 4-1) → 3',
+  3, scoreGroupMatch({ home: 2, away: 0 }, { home: 4, away: 1 }))
 
 assert('wrong result (1-2 vs 2-1) → 0',
   0, scoreGroupMatch({ home: 1, away: 2 }, { home: 2, away: 1 }))
@@ -59,37 +62,38 @@ assert('null prediction → 0',
 // ── Knockout scoring ───────────────────────────────────────────────────────────
 //
 // Tests use placement maps directly to isolate scoreKnockoutForUser.
-// Top-4 bonus: +25 per team where BOTH predicted ≥ SF AND actual ≥ SF.
+// Scoring is cumulative: cap = min(predicted, actual), sum all rounds up to cap.
+// Top-4 bonus (+25 per exact finish slot) is computed in computeUserScore, not here.
 
 function makePlacements(entries: Array<[string, KnockoutRound]>): Map<string, KnockoutRound> {
   return new Map(entries)
 }
 
-// Case 1: Team A predicted Champion, actually Champion → 20 + 25 = 45
+// Case 1: Team A predicted Champion, actually Champion → cumulative 6+8+10+15+20=59
 {
   const pred = makePlacements([['A', 'Champion']])
   const actual = makePlacements([['A', 'Champion']])
   const { total } = scoreKnockoutForUser(pred, actual)
-  assert('knockout: predicted Champion, actually Champion → 45', 45, total)
+  assert('knockout: predicted Champion, actually Champion → 59', 59, total)
 }
 
-// Case 2: Team A predicted Champion, actually eliminated in QF → 8
+// Case 2: Team A predicted Champion, actually eliminated in QF → cumulative 6+8=14
 {
   const pred = makePlacements([['A', 'Champion']])
   const actual = makePlacements([['A', 'QF']])
   const { total } = scoreKnockoutForUser(pred, actual)
-  assert('knockout: predicted Champion, actually QF → 8', 8, total)
+  assert('knockout: predicted Champion, actually QF → 14', 14, total)
 }
 
-// Case 3: Team A predicted SF (in top-4), actually Champion → 10 + 25 = 35
+// Case 3: Team A predicted SF, actually Champion → cap=SF → cumulative 6+8+10=24
 {
   const pred = makePlacements([['A', 'SF']])
   const actual = makePlacements([['A', 'Champion']])
   const { total } = scoreKnockoutForUser(pred, actual)
-  assert('knockout: predicted SF, actually Champion → 35', 35, total)
+  assert('knockout: predicted SF, actually Champion → 24', 24, total)
 }
 
-// Case 4: Team A predicted R16, actually SF → 6 (no top-4 bonus: predicted < SF)
+// Case 4: Team A predicted R16, actually SF → cap=R16 → 6
 {
   const pred = makePlacements([['A', 'R16']])
   const actual = makePlacements([['A', 'SF']])
@@ -105,19 +109,18 @@ function makePlacements(entries: Array<[string, KnockoutRound]>): Map<string, Kn
   assert('knockout: team not in either bracket → 0', 0, total)
 }
 
-// Sanity: perTeam and topFourBonus breakdown
+// Sanity: perTeam cumulative breakdown (top-4 bonus is computed separately in computeUserScore)
+// A: 6+8+10+15+20=59, B: 6+8+10+15=39, C: 6+8+10=24, D: 6+8=14
 {
   const pred = makePlacements([['A', 'Champion'], ['B', 'Final'], ['C', 'SF'], ['D', 'QF']])
   const actual = makePlacements([['A', 'Champion'], ['B', 'Final'], ['C', 'SF'], ['D', 'QF']])
   const result = scoreKnockoutForUser(pred, actual)
-  // A: Champion=20 +25, B: Final=15 +25, C: SF=10 +25, D: QF=8 (no bonus)
-  assert('knockout perTeam A=20', 20, result.perTeam.get('A') ?? -1)
-  assert('knockout perTeam B=15', 15, result.perTeam.get('B') ?? -1)
-  assert('knockout perTeam C=10', 10, result.perTeam.get('C') ?? -1)
-  assert('knockout perTeam D=8', 8, result.perTeam.get('D') ?? -1)
-  assert('knockout basePoints=53', 53, result.basePoints)
-  assert('knockout topFourBonus=75', 75, result.topFourBonus)  // A+B+C get bonus (3×25)
-  assert('knockout total=128', 128, result.total)
+  assert('knockout perTeam A=59', 59, result.perTeam.get('A') ?? -1)
+  assert('knockout perTeam B=39', 39, result.perTeam.get('B') ?? -1)
+  assert('knockout perTeam C=24', 24, result.perTeam.get('C') ?? -1)
+  assert('knockout perTeam D=14', 14, result.perTeam.get('D') ?? -1)
+  assert('knockout basePoints=136', 136, result.basePoints)
+  assert('knockout total=136', 136, result.total)
 }
 
 // ── Awards ─────────────────────────────────────────────────────────────────────
