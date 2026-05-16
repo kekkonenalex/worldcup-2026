@@ -103,15 +103,15 @@ function GroupPredictionsSection({
                 key={m.match_number}
                 className={`flex items-center gap-2 text-sm px-3 py-2 rounded-lg ${m.home_score === null ? 'text-fg-muted' : 'text-fg-secondary'}`}
               >
-                <span className="w-5 text-center shrink-0">{m.home_flag}</span>
-                <span className="w-8 text-xs text-fg-muted shrink-0">{m.home_code}</span>
-                <span className="flex-1 text-right text-fg-muted text-xs">{m.home_name}</span>
+                <span className="flex-1 flex justify-end">
+                  <TeamBadge name={m.home_name} abbreviation={m.home_code} size="sm" />
+                </span>
                 <span className="font-mono tabular-nums text-fg-primary mx-1 shrink-0 w-12 text-center">
                   {m.home_score !== null ? `${m.home_score} — ${m.away_score}` : '— vs —'}
                 </span>
-                <span className="flex-1 text-left text-fg-muted text-xs">{m.away_name}</span>
-                <span className="w-8 text-xs text-fg-muted shrink-0 text-right">{m.away_code}</span>
-                <span className="w-5 text-center shrink-0">{m.away_flag}</span>
+                <span className="flex-1">
+                  <TeamBadge name={m.away_name} abbreviation={m.away_code} size="sm" />
+                </span>
               </div>
             ))}
           </div>
