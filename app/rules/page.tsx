@@ -159,23 +159,37 @@ export default function RulesPage() {
         <div className="bg-bg-card border border-border-subtle rounded-card px-5 py-1 mb-2">
           <ScoreRow label="Exact score" points="6 pts" />
           <ScoreRow
-            label="Correct result + correct goal difference"
+            label="Correct result (correct winner or draw) + correct goal difference"
             points="5 pts"
             sub="e.g. you predicted 2–0, actual was 3–1"
           />
           <ScoreRow
-            label="Correct result, wrong goal difference"
+            label="Correct result (correct winner or draw), wrong goal difference"
             points="3 pts"
             sub="e.g. you predicted 2–0, actual was 2–1"
           />
           <ScoreRow label="Wrong result" points="0 pts" />
         </div>
-        <div className="bg-bg-card border border-border-subtle rounded-card px-5 py-1 mb-8">
-          <ScoreRow
-            label="Score bonus"
-            points="+1 pt"
-            sub="Added to a 0- or 3-point result if you correctly predicted at least one team's non-zero goal count. Does not apply to exact scores or draws that end 0–0."
-          />
+        <div className="bg-bg-card border border-border-subtle rounded-card px-5 pt-3 pb-4 mb-8 space-y-3">
+          <div className="flex items-start justify-between gap-4 pb-2.5 border-b border-border-subtle">
+            <span className="text-sm text-fg-secondary">Score bonus</span>
+            <span className="font-mono font-bold text-accent tabular-nums shrink-0 text-sm">+1 pt</span>
+          </div>
+          <p className="text-xs text-fg-muted leading-relaxed">
+            You earn a +1 bonus on any match where you correctly predicted at least one
+            team&apos;s exact goal count — even when that count is zero. The cap per match
+            is still 6 points (no bonus on exact scores).
+          </p>
+          <p className="text-xs text-fg-muted leading-relaxed">
+            <span className="text-fg-secondary font-semibold">Example:</span>{' '}
+            you predicted 1–0 and the match ended 0–0. You got the away team&apos;s goal
+            count (0) exactly right, so you earn 0 + 1 = <span className="text-fg-secondary font-semibold">1 point</span>.
+          </p>
+          <p className="text-xs text-fg-muted leading-relaxed">
+            <span className="text-fg-secondary font-semibold">Example:</span>{' '}
+            you predicted 2–1 and the match ended 3–1. You got the outcome right (3 pts)
+            and the away count exactly right (1 = 1), so you earn 3 + 1 = <span className="text-fg-secondary font-semibold">4 points</span>.
+          </p>
         </div>
 
         {/* Knockout */}
@@ -183,45 +197,81 @@ export default function RulesPage() {
           Knockout — per team
         </h3>
         <p className="text-sm text-fg-secondary mb-3">
-          Points are{' '}
-          <span className="text-fg-primary font-semibold">cumulative</span>: you earn all
-          round scores up to the furthest round that you predicted AND the team actually
-          reached — whichever comes first. A team you correctly call to the Final earns you
-          6 + 8 + 10 + 15 = 39 pts.
+          Knockout points{' '}
+          <span className="text-fg-primary font-semibold">stack</span>. For each team in
+          your bracket, you earn points for every round they correctly advance to — not just
+          the furthest round.
         </p>
-        <div className="bg-bg-card border border-border-subtle rounded-card px-5 py-1 mb-2">
+        <div className="bg-bg-card border border-border-subtle rounded-card px-5 py-1 mb-3">
           <ScoreRow
-            label="Round of 32"
+            label="Team advances to R32"
             points="+6 pts"
-            sub="Cumulative total: 6 pts"
+            sub="Cumulative so far: 6 pts"
           />
           <ScoreRow
-            label="Round of 16"
+            label="Team advances to R16"
             points="+8 pts"
-            sub="Cumulative total: 14 pts"
+            sub="Cumulative so far: 14 pts"
           />
           <ScoreRow
-            label="Quarter-finals"
+            label="Team advances to QF"
             points="+10 pts"
-            sub="Cumulative total: 24 pts"
+            sub="Cumulative so far: 24 pts"
           />
           <ScoreRow
-            label="Semi-finals"
+            label="Team advances to SF"
             points="+15 pts"
-            sub="Cumulative total: 39 pts"
+            sub="Cumulative so far: 39 pts"
           />
           <ScoreRow
-            label="Champion"
+            label="Team advances to Final"
             points="+20 pts"
-            sub="Cumulative total: 59 pts"
+            sub="Cumulative so far: 59 pts"
           />
         </div>
-        <div className="bg-bg-card border border-border-subtle rounded-card px-5 py-1 mb-8">
-          <ScoreRow
-            label="Top-4 placement bonus"
-            points="+25 pts each"
-            sub="For every team you predicted to reach the semi-finals or further that actually does. Maximum +100 pts (all four semi-finalists correct)."
-          />
+        <div className="bg-bg-card border border-border-subtle rounded-card px-5 pt-3 pb-4 mb-3 space-y-2">
+          <p className="text-xs text-fg-muted leading-relaxed">
+            <span className="text-fg-secondary font-semibold">Example:</span>{' '}
+            you predict Portugal to reach the QF. Portugal reaches the QF and loses there.
+            You earn 6 + 8 + 10 = <span className="text-fg-secondary font-semibold">24 points</span> for Portugal.
+          </p>
+          <p className="text-xs text-fg-muted leading-relaxed">
+            <span className="text-fg-secondary font-semibold">Example:</span>{' '}
+            you predict Argentina to win the World Cup. Argentina wins. You earn
+            6 + 8 + 10 + 15 + 20 = <span className="text-fg-secondary font-semibold">59 points</span> across
+            Argentina&apos;s bracket path, plus a separate top-4 bonus for predicting Argentina as
+            champion (see below).
+          </p>
+          <p className="text-xs text-fg-muted leading-relaxed">
+            <span className="text-fg-secondary font-semibold">Example:</span>{' '}
+            you predict Brazil to make the Round of 16. Brazil reaches the Semi-finals, but
+            you only placed Brazil in your R16 slot — not in your QF, SF, or Final slots.
+            You earn 6 + 8 = <span className="text-fg-secondary font-semibold">14 points</span> for Brazil.
+          </p>
+        </div>
+        <div className="bg-bg-card border border-border-subtle rounded-card px-5 pt-3 pb-4 mb-8 space-y-3">
+          <div className="flex items-start justify-between gap-4 pb-2.5 border-b border-border-subtle">
+            <span className="text-sm text-fg-secondary">Top-4 placement bonus</span>
+            <span className="font-mono font-bold text-accent tabular-nums shrink-0 text-sm">+25 pts each</span>
+          </div>
+          <p className="text-xs text-fg-muted leading-relaxed">
+            You also predict the final standings of the top 4 teams: World Cup winner (1st),
+            runner-up (2nd), third place, and fourth place. For each position you predict
+            exactly right, you earn +25 bonus points. Maximum 100 bonus points if you nail
+            all four positions.
+          </p>
+          <p className="text-xs text-fg-muted leading-relaxed">
+            The position must be exact. If you predict a team to finish 4th and they finish
+            3rd, that does not count.
+          </p>
+          <p className="text-xs text-fg-muted leading-relaxed">
+            <span className="text-fg-secondary font-semibold">Example:</span>{' '}
+            you predicted Argentina 1st, Brazil 2nd, France 3rd, Spain 4th. Actual finish:
+            Argentina 1st, France 2nd, Brazil 3rd, Spain 4th. You earn +25 for Argentina
+            (correct 1st) and +25 for Spain (correct 4th). Nothing for Brazil (predicted
+            2nd, finished 3rd) or France (predicted 3rd, finished 2nd).
+            Total: <span className="text-fg-secondary font-semibold">+50 bonus points</span>.
+          </p>
         </div>
 
         {/* Awards */}
