@@ -3,6 +3,7 @@ export interface Profile {
   display_name: string
   password_set: boolean
   is_admin: boolean
+  welcome_shown: boolean
   created_at: string
 }
 

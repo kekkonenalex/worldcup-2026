@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { isPastDeadline, timeUntilDeadline } from '@/lib/config'
 import SignOutButton from '@/components/SignOutButton'
 import { Card } from '@/components/ui/Card'
+import { WelcomePopup } from '@/components/welcome/WelcomePopup'
 import type { Profile, AwardPrediction } from '@/types/database'
 
 function countAwards(award: AwardPrediction | null): number {
@@ -189,6 +190,8 @@ export default async function DashboardPage() {
       <div className="flex justify-center">
         <SignOutButton />
       </div>
+
+      <WelcomePopup initiallyShown={!profile?.welcome_shown} />
     </div>
   )
 }
