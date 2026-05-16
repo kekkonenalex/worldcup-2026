@@ -38,7 +38,7 @@ export default function RootLayout({
         <div
           className="fixed inset-0 pointer-events-none"
           style={{
-            backgroundImage: "url('/images/trophy-bg.jpg')",
+            backgroundImage: "url('/images/trophy-bg.avif')",
             backgroundRepeat: 'no-repeat',
             backgroundPosition: 'center center',
             backgroundSize: 'cover',
