@@ -12,7 +12,7 @@ export function MatchTime({ iso, className }: Props) {
   useEffect(() => {
     if (!iso) return
     const date = new Date(iso)
-    const formatter = new Intl.DateTimeFormat(undefined, {
+    const formatter = new Intl.DateTimeFormat('en-GB', {
       weekday: 'short',
       day: 'numeric',
       month: 'short',
