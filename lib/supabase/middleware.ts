@@ -28,7 +28,43 @@ export async function updateSession(request: NextRequest) {
 
   // Required: refreshes the session token if expired.
   // Must not be removed — without this, cookies are never written back.
-  await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  const { pathname } = request.nextUrl
+
+  // Public routes — no auth needed
+  if (
+    pathname === '/' ||
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/auth') ||
+    pathname.startsWith('/privacy') ||
+    pathname.startsWith('/rules') ||
+    pathname.startsWith('/support') ||
+    pathname.startsWith('/terms')
+  ) {
+    return supabaseResponse
+  }
+
+  // Cron routes — require CRON_SECRET bearer token, not user auth
+  if (pathname.startsWith('/api/cron/')) {
+    if (request.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    return supabaseResponse
+  }
+
+  // All other API routes — require authenticated user
+  if (pathname.startsWith('/api/')) {
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return supabaseResponse
+  }
+
+  // All other page routes — require authenticated user
+  if (!user) {
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('next', pathname)
+    return NextResponse.redirect(loginUrl)
+  }
 
   return supabaseResponse
 }
