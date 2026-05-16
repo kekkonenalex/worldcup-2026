@@ -1,6 +1,7 @@
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { TeamBadge, type TeamBadgeProps } from '@/components/ui/TeamBadge'
+import { MatchTime } from '@/components/ui/MatchTime'
 import { ScoreInput } from '@/components/ui/ScoreInput'
 
 type MatchStatus = 'hit' | 'miss' | 'pending' | 'result' | 'live' | 'upcoming'
@@ -15,6 +16,7 @@ interface MatchCardProps {
   liveMinute?: number
   pointsEarned?: number | null
   startsInLabel?: string
+  kickoffIso?: string | null
   onScoreChange?: (home: number, away: number) => void
   editable?: boolean
   homeSlotLabel?: string
@@ -37,6 +39,7 @@ export function MatchCard({
   liveMinute,
   pointsEarned,
   startsInLabel,
+  kickoffIso,
   onScoreChange,
   editable,
   homeSlotLabel,
@@ -48,9 +51,12 @@ export function MatchCard({
     <Card className="overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs uppercase tracking-wider text-fg-muted font-semibold">
-          {groupOrStage}
-        </span>
+        <div className="flex flex-col">
+          <span className="text-xs uppercase tracking-wider text-fg-muted font-semibold">
+            {groupOrStage}
+          </span>
+          <MatchTime iso={kickoffIso ?? null} className="text-xs text-fg-muted" />
+        </div>
         {status !== 'upcoming' && (
           <Badge variant={badgeVariant} minute={liveMinute} />
         )}

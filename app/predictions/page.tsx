@@ -12,7 +12,7 @@ export default async function PredictionsPage() {
 
   const { data: matchData, error: matchError } = await supabase
     .from('matches')
-    .select(`id, match_number, group_letter, home_team_id, away_team_id, home_team:teams!matches_home_team_id_fkey(id, name, short_code, group_letter, flag_emoji), away_team:teams!matches_away_team_id_fkey(id, name, short_code, group_letter, flag_emoji)`)
+    .select(`id, match_number, group_letter, home_team_id, away_team_id, scheduled_at, home_team:teams!matches_home_team_id_fkey(id, name, short_code, group_letter, flag_emoji), away_team:teams!matches_away_team_id_fkey(id, name, short_code, group_letter, flag_emoji)`)
     .eq('stage', 'group')
     .order('match_number', { ascending: true })
 
@@ -22,7 +22,7 @@ export default async function PredictionsPage() {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-fg-primary mb-2">Could not load matches</h1>
           <p className="text-fg-muted mb-6">{matchError?.message ?? 'No group stage matches found.'}</p>
-          <Link href="/dashboard" className="text-accent hover:underline text-sm">← Dashboard</Link>
+          <Link href="/dashboard" className="text-accent hover:underline text-sm">← Home</Link>
         </div>
       </div>
     )
@@ -43,7 +43,7 @@ export default async function PredictionsPage() {
     <div className="pb-16">
       <div className="mb-6">
         <Link href="/dashboard" className="text-xs font-semibold uppercase tracking-wider text-fg-muted hover:text-fg-primary transition-colors">
-          ← Dashboard
+          ← Home
         </Link>
         <h1 className="text-4xl font-display tracking-wide uppercase text-fg-primary mt-3 mb-1">Group Stage</h1>
         <p className="text-fg-muted text-sm">Predict the score of every group stage match. Auto-saves as you type.</p>

@@ -11,6 +11,7 @@ import { BRACKET_STRUCTURE } from '@/lib/bracket'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { GroupStandingsTable } from '@/components/ui/GroupStandingsTable'
 import { MatchCard } from '@/components/ui/MatchCard'
+import { MatchTime } from '@/components/ui/MatchTime'
 import { Card } from '@/components/ui/Card'
 
 export const dynamic = 'force-dynamic'
@@ -33,6 +34,7 @@ type RawMatch = {
   group_letter: string | null
   home_team_id: number | null
   away_team_id: number | null
+  scheduled_at: string | null
   home_score: number | null
   away_score: number | null
   status: string
@@ -50,7 +52,7 @@ export default async function TournamentPage() {
       .from('matches')
       .select(`
         id, match_number, stage, group_letter,
-        home_team_id, away_team_id,
+        home_team_id, away_team_id, scheduled_at,
         home_score, away_score, status,
         home_team:teams!matches_home_team_id_fkey(id, name, short_code, flag_emoji, group_letter),
         away_team:teams!matches_away_team_id_fkey(id, name, short_code, flag_emoji, group_letter)
@@ -179,6 +181,7 @@ export default async function TournamentPage() {
                       awayTeam={m.away_team ? { name: m.away_team.name, abbreviation: m.away_team.short_code, flag: m.away_team.flag_emoji } : null}
                       actual={m.home_score != null && m.away_score != null ? { home: m.home_score, away: m.away_score } : null}
                       status={matchStatus as 'result' | 'live' | 'upcoming'}
+                      kickoffIso={m.scheduled_at}
                       homeSlotLabel={!m.home_team ? `Winner M${m.home_team_id ?? '?'}` : undefined}
                       awaySlotLabel={!m.away_team ? `Winner M${m.away_team_id ?? '?'}` : undefined}
                     />

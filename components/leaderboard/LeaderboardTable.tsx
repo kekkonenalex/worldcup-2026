@@ -84,18 +84,6 @@ function ExpandedBreakdown({ b }: { b: LeaderboardBreakdown }) {
         </div>
       </div>
 
-      {/* Tiebreakers */}
-      <div>
-        <div className="text-fg-muted mb-1.5 font-medium">Tiebreakers</div>
-        <div className="flex flex-wrap gap-3">
-          <TbCell label="Champion" value={b.tiebreakers.gold ? '✓' : '✗'} />
-          <TbCell label="Runner-up" value={b.tiebreakers.silver ? '✓' : '✗'} />
-          <TbCell label="3rd place" value={b.tiebreakers.bronze ? '✓' : '✗'} />
-          <TbCell label="Boot player" value={b.tiebreakers.goldenBoot ? '✓' : '✗'} />
-          <TbCell label="Group pts" value={b.tiebreakers.groupPoints} />
-          <TbCell label="R32 correct" value={b.tiebreakers.r32Correct} />
-        </div>
-      </div>
 
     </div>
   )

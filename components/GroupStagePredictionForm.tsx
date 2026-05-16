@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { savePrediction } from '@/app/predictions/actions'
 import { MAX_GOALS_PER_TEAM, timeUntilDeadline } from '@/lib/config'
+import { TeamBadge } from '@/components/ui/TeamBadge'
+import { MatchTime } from '@/components/ui/MatchTime'
 import type { MatchWithTeams, GroupPrediction } from '@/types/database'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -259,9 +261,7 @@ export default function GroupStagePredictionForm({
                   </h2>
                   <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
                     {teams.map(t => (
-                      <span key={t.id} className="text-xs text-fg-muted">
-                        {t.flag_emoji} {t.name}
-                      </span>
+                      <TeamBadge key={t.id} name={t.name} abbreviation={t.short_code} size="sm" />
                     ))}
                   </div>
                 </div>
@@ -281,65 +281,67 @@ export default function GroupStagePredictionForm({
                   return (
                     <div
                       key={match.id}
-                      className={`${rowBg} px-3 py-2.5 flex items-center gap-2`}
+                      className={`${rowBg} px-3 py-2 flex flex-col gap-1`}
                     >
-                      {/* Match number */}
-                      <span className="text-xs text-fg-muted tabular-nums w-6 shrink-0 text-center">
-                        {match.match_number}
-                      </span>
+                      {/* Kickoff time */}
+                      <MatchTime iso={match.scheduled_at ?? null} className="text-xs text-fg-muted" />
 
-                      {/* Home team */}
-                      <div className="flex-1 flex items-center justify-end gap-1.5 min-w-0">
-                        <span className="text-sm text-fg-secondary truncate hidden sm:block">
-                          {match.home_team?.name ?? 'TBD'}
+                      {/* Match row */}
+                      <div className="flex items-center gap-2">
+                        {/* Match number */}
+                        <span className="text-xs text-fg-muted tabular-nums w-6 shrink-0 text-center">
+                          {match.match_number}
                         </span>
-                        <span className="text-sm text-fg-secondary sm:hidden truncate">
-                          {match.home_team?.short_code ?? '?'}
-                        </span>
-                        <span className="text-base shrink-0">{match.home_team?.flag_emoji ?? '🏳'}</span>
-                      </div>
 
-                      {/* Score inputs */}
-                      <div className="flex items-center gap-1.5 shrink-0 score-pill-field">
-                        <input
-                          type="number"
-                          min={0}
-                          max={MAX_GOALS_PER_TEAM}
-                          step={1}
-                          inputMode="numeric"
-                          disabled={locked}
-                          value={entry?.home_score ?? ''}
-                          onChange={e => handleChange(match.id, 'home_score', e.target.value)}
-                          className="score-pill-field w-12 text-center rounded-lg bg-bg-elevated border border-border-subtle text-fg-primary py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent disabled:opacity-50 disabled:cursor-default [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
-                        <span className="text-fg-muted text-sm select-none">—</span>
-                        <input
-                          type="number"
-                          min={0}
-                          max={MAX_GOALS_PER_TEAM}
-                          step={1}
-                          inputMode="numeric"
-                          disabled={locked}
-                          value={entry?.away_score ?? ''}
-                          onChange={e => handleChange(match.id, 'away_score', e.target.value)}
-                          className="score-pill-field w-12 text-center rounded-lg bg-bg-elevated border border-border-subtle text-fg-primary py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent disabled:opacity-50 disabled:cursor-default [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
-                      </div>
+                        {/* Home team */}
+                        <div className="flex-1 flex items-center justify-end min-w-0">
+                          {match.home_team ? (
+                            <TeamBadge name={match.home_team.name} abbreviation={match.home_team.short_code} size="sm" />
+                          ) : (
+                            <span className="text-sm text-fg-muted">TBD</span>
+                          )}
+                        </div>
 
-                      {/* Away team */}
-                      <div className="flex-1 flex items-center gap-1.5 min-w-0">
-                        <span className="text-base shrink-0">{match.away_team?.flag_emoji ?? '🏳'}</span>
-                        <span className="text-sm text-fg-secondary truncate hidden sm:block">
-                          {match.away_team?.name ?? 'TBD'}
-                        </span>
-                        <span className="text-sm text-fg-secondary sm:hidden truncate">
-                          {match.away_team?.short_code ?? '?'}
-                        </span>
-                      </div>
+                        {/* Score inputs */}
+                        <div className="flex items-center gap-1.5 shrink-0 score-pill-field">
+                          <input
+                            type="number"
+                            min={0}
+                            max={MAX_GOALS_PER_TEAM}
+                            step={1}
+                            inputMode="numeric"
+                            disabled={locked}
+                            value={entry?.home_score ?? ''}
+                            onChange={e => handleChange(match.id, 'home_score', e.target.value)}
+                            className="score-pill-field w-12 text-center rounded-lg bg-bg-elevated border border-border-subtle text-fg-primary py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent disabled:opacity-50 disabled:cursor-default [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                          <span className="text-fg-muted text-sm select-none">—</span>
+                          <input
+                            type="number"
+                            min={0}
+                            max={MAX_GOALS_PER_TEAM}
+                            step={1}
+                            inputMode="numeric"
+                            disabled={locked}
+                            value={entry?.away_score ?? ''}
+                            onChange={e => handleChange(match.id, 'away_score', e.target.value)}
+                            className="score-pill-field w-12 text-center rounded-lg bg-bg-elevated border border-border-subtle text-fg-primary py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent disabled:opacity-50 disabled:cursor-default [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                        </div>
 
-                      {/* Save indicator */}
-                      <div className="shrink-0">
-                        <SaveIndicator status={status} errorMsg={errMsg} />
+                        {/* Away team */}
+                        <div className="flex-1 flex items-center min-w-0">
+                          {match.away_team ? (
+                            <TeamBadge name={match.away_team.name} abbreviation={match.away_team.short_code} size="sm" />
+                          ) : (
+                            <span className="text-sm text-fg-muted">TBD</span>
+                          )}
+                        </div>
+
+                        {/* Save indicator */}
+                        <div className="shrink-0">
+                          <SaveIndicator status={status} errorMsg={errMsg} />
+                        </div>
                       </div>
                     </div>
                   )

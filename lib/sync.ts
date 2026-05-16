@@ -2,8 +2,16 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { fetchWorldCupMatches, classifyStage } from '@/lib/football-data'
-import { recomputeBracketCascade } from '@/lib/results'
-import type { MatchStage, MatchStatus } from '@/types/database'
+import {
+  computeActualStandings,
+  rankThirdPlaceTeams,
+  type MatchInput,
+  type TeamInput,
+  type TeamStanding,
+  type ThirdPlaceResult,
+} from '@/lib/simulation'
+import { BRACKET_STRUCTURE, assignThirdPlaceTeams, type FixedSource } from '@/lib/bracket'
+import type { Match, MatchStage, MatchStatus } from '@/types/database'
 
 // Known name variations from football-data.org → our teams table names.
 const TEAM_ALIASES: Record<string, string> = {
@@ -53,6 +61,9 @@ function stageToInternal(fdStage: string, fdGroup: string | null): { stage: Matc
 export interface SyncResult {
   bootstrapped?: number
   updated: number
+  cleared: number
+  cascadeAssigned: number
+  cascadeEmptied: number
   errors: string[]
 }
 
@@ -134,12 +145,163 @@ export async function bootstrapExternalIds(apiKey: string): Promise<SyncResult> 
     }
   }
 
-  return { bootstrapped, updated: 0, errors }
+  return { bootstrapped, updated: 0, cleared: 0, cascadeAssigned: 0, cascadeEmptied: 0, errors }
 }
 
 /**
- * Idempotent sync: updates scores/status for all finished matches with an external_id.
- * Calls recomputeBracketCascade if any knockout results changed.
+ * Rebuilds home_team_id / away_team_id on all 32 knockout matches (73–104)
+ * from current DB state. Explicitly nulls slots that can't be resolved.
+ * Idempotent — safe to call repeatedly.
+ */
+export async function rebuildKnockoutCascade(): Promise<{ assigned: number; emptied: number; errors: string[] }> {
+  const supabase = await createClient()
+
+  const [{ data: rawMatches }, { data: rawTeams }] = await Promise.all([
+    supabase.from('matches').select('*').order('match_number', { ascending: true }),
+    supabase.from('teams').select('*'),
+  ])
+
+  const matches = (rawMatches ?? []) as unknown as Match[]
+  const teams = (rawTeams ?? []) as unknown as TeamInput[]
+
+  const groupMatches = matches.filter(m => m.stage === 'group')
+  const groupComplete =
+    groupMatches.length === 72 &&
+    groupMatches.every(m => m.home_score != null && m.away_score != null)
+
+  // Mutable map: match_number → { id, home, away, winner }
+  type Entry = { id: number; home: number | null; away: number | null; winner: number | null }
+  const matchMap = new Map<number, Entry>()
+  for (const m of matches) {
+    matchMap.set(m.match_number, {
+      id: m.id,
+      home: m.home_team_id,
+      away: m.away_team_id,
+      winner: m.winner_team_id,
+    })
+  }
+
+  // Build group standings (only needed when group stage is complete)
+  const groupStandingsMap = new Map<string, TeamStanding[]>()
+  let thirdPlaceResult: ThirdPlaceResult | null = null
+  let thirdAssignment: Record<number, string> = {}
+
+  if (groupComplete) {
+    const teamsByGroup = new Map<string, TeamInput[]>()
+    for (const t of teams) {
+      if (!teamsByGroup.has(t.group_letter)) teamsByGroup.set(t.group_letter, [])
+      teamsByGroup.get(t.group_letter)!.push(t)
+    }
+
+    const allGroupStandings: TeamStanding[][] = []
+    for (const letter of 'ABCDEFGHIJKL'.split('')) {
+      const gm = groupMatches.filter(m => m.group_letter === letter)
+      const gt = teamsByGroup.get(letter) ?? []
+      if (gt.length === 0) continue
+      const results = gm.map(m => ({ match_id: m.id, home_score: m.home_score!, away_score: m.away_score! }))
+      const matchInputs: MatchInput[] = gm.map(m => ({
+        id: m.id,
+        match_number: m.match_number,
+        group_letter: letter,
+        home_team_id: m.home_team_id!,
+        away_team_id: m.away_team_id!,
+      }))
+      const standings = computeActualStandings(letter, matchInputs, results, gt)
+      allGroupStandings.push(standings)
+      groupStandingsMap.set(letter, standings)
+    }
+
+    try {
+      thirdPlaceResult = rankThirdPlaceTeams(allGroupStandings)
+      thirdAssignment = assignThirdPlaceTeams(thirdPlaceResult.advancing.map(t => t.group_letter))
+    } catch {
+      // third-place assignment failed — will null all R32 slots
+      thirdPlaceResult = null
+    }
+  }
+
+  const updates: Array<{ id: number; home_team_id: number | null; away_team_id: number | null }> = []
+  let assigned = 0
+  let emptied = 0
+  const errors: string[] = []
+
+  for (const def of BRACKET_STRUCTURE) {
+    const entry = matchMap.get(def.match_number)
+    if (!entry) continue
+
+    let homeId: number | null = null
+    let awayId: number | null = null
+
+    if (def.stage === 'r32') {
+      if (!groupComplete || !thirdPlaceResult) {
+        homeId = null
+        awayId = null
+      } else {
+        const resolveGroupSlot = (slot: FixedSource): number | null => {
+          if (slot.kind === 'group_winner') {
+            return groupStandingsMap.get(slot.group)?.find(s => s.position === 1)?.team_id ?? null
+          }
+          if (slot.kind === 'group_runner_up') {
+            return groupStandingsMap.get(slot.group)?.find(s => s.position === 2)?.team_id ?? null
+          }
+          if (slot.kind === 'third_place') {
+            const assignedGroup = thirdAssignment[def.match_number]
+            if (!assignedGroup) return null
+            return thirdPlaceResult!.advancing.find(t => t.group_letter === assignedGroup)?.team_id ?? null
+          }
+          return null
+        }
+        homeId = resolveGroupSlot(def.slot_a)
+        awayId = resolveGroupSlot(def.slot_b)
+      }
+    } else {
+      // R16, QF, SF, 3rd, Final — resolve from parent match winners
+      const resolveKnockoutSlot = (slot: FixedSource): number | null => {
+        if (slot.kind === 'winner_of') {
+          return matchMap.get(slot.match)?.winner ?? null
+        }
+        if (slot.kind === 'loser_of') {
+          const parent = matchMap.get(slot.match)
+          if (!parent || parent.winner == null) return null
+          if (parent.home === parent.winner) return parent.away
+          if (parent.away === parent.winner) return parent.home
+          return null
+        }
+        return null
+      }
+      const resolvedHome = resolveKnockoutSlot(def.slot_a)
+      const resolvedAway = resolveKnockoutSlot(def.slot_b)
+      // Both must be resolved; if either is missing, null both
+      if (resolvedHome != null && resolvedAway != null) {
+        homeId = resolvedHome
+        awayId = resolvedAway
+      }
+    }
+
+    // Update mutable map so downstream slots resolve in this same pass
+    matchMap.set(def.match_number, { ...entry, home: homeId, away: awayId })
+
+    if (entry.home !== homeId || entry.away !== awayId) {
+      updates.push({ id: entry.id, home_team_id: homeId, away_team_id: awayId })
+      if (homeId != null || awayId != null) assigned++
+      else emptied++
+    }
+  }
+
+  for (const u of updates) {
+    const { error } = await supabase
+      .from('matches')
+      .update({ home_team_id: u.home_team_id, away_team_id: u.away_team_id } as never)
+      .eq('id', u.id)
+    if (error) errors.push(`cascade match ${u.id}: ${error.message}`)
+  }
+
+  return { assigned, emptied, errors }
+}
+
+/**
+ * Idempotent sync: updates scores/status for finished matches, clears stale data
+ * for non-finished matches, then rebuilds the full knockout cascade.
  */
 export async function syncMatchResults(apiKey: string): Promise<SyncResult> {
   const supabase = await createClient()
@@ -167,7 +329,7 @@ export async function syncMatchResults(apiKey: string): Promise<SyncResult> {
   const ourMatches = (ourMatchesRaw ?? []) as unknown as OurMatch[]
 
   let updated = 0
-  let knockoutChanged = false
+  let cleared = 0
   const errors: string[] = []
 
   for (const m of ourMatches) {
@@ -175,59 +337,46 @@ export async function syncMatchResults(apiKey: string): Promise<SyncResult> {
     if (!fd) continue
 
     const newStatus = fdStatusToInternal(fd.status)
-    const newHome = fd.score.fullTime.home
-    const newAway = fd.score.fullTime.away
 
-    // Skip if nothing changed
-    if (
-      m.status === newStatus &&
-      m.home_score === newHome &&
-      m.away_score === newAway
-    ) continue
+    if (newStatus === 'finished') {
+      const newHome = fd.score.fullTime.home
+      const newAway = fd.score.fullTime.away
 
-    // For finished group matches, we only need scores + status
-    // For finished knockout matches, also set winner_team_id
-    let winnerTeamId: number | null = m.winner_team_id
+      // Skip if nothing changed
+      if (m.status === newStatus && m.home_score === newHome && m.away_score === newAway) continue
 
-    if (newStatus === 'finished' && m.stage !== 'group' && newHome !== null && newAway !== null) {
-      if (fd.score.winner === 'HOME_TEAM') {
-        winnerTeamId = m.home_team_id
-      } else if (fd.score.winner === 'AWAY_TEAM') {
-        winnerTeamId = m.away_team_id
+      let winnerTeamId: number | null = m.winner_team_id
+      if (m.stage !== 'group' && newHome !== null && newAway !== null) {
+        if (fd.score.winner === 'HOME_TEAM') winnerTeamId = m.home_team_id
+        else if (fd.score.winner === 'AWAY_TEAM') winnerTeamId = m.away_team_id
       }
-    }
 
-    const patch: Record<string, unknown> = {
-      status: newStatus,
-      home_score: newHome,
-      away_score: newAway,
-    }
-    if (m.stage !== 'group') {
-      patch.winner_team_id = winnerTeamId
-    }
+      const patch: Record<string, unknown> = { status: newStatus, home_score: newHome, away_score: newAway }
+      if (m.stage !== 'group') patch.winner_team_id = winnerTeamId
 
-    const { error } = await supabase
-      .from('matches')
-      .update(patch as never)
-      .eq('id', m.id)
-
-    if (error) {
-      errors.push(`match ${m.id}: ${error.message}`)
+      const { error } = await supabase.from('matches').update(patch as never).eq('id', m.id)
+      if (error) errors.push(`match ${m.id}: ${error.message}`)
+      else updated++
     } else {
-      updated++
-      if (m.stage !== 'group' && newStatus === 'finished') {
-        knockoutChanged = true
+      // Not finished — clear any stale result data
+      const hasStaleScores = m.home_score !== null || m.away_score !== null
+      const hasStaleWinner = m.stage !== 'group' && m.winner_team_id !== null
+      const statusChanged = m.status !== newStatus
+
+      if (hasStaleScores || hasStaleWinner || statusChanged) {
+        const clearPatch: Record<string, unknown> = { status: newStatus, home_score: null, away_score: null }
+        if (m.stage !== 'group') clearPatch.winner_team_id = null
+
+        const { error } = await supabase.from('matches').update(clearPatch as never).eq('id', m.id)
+        if (error) errors.push(`match ${m.id} (clear): ${error.message}`)
+        else if (hasStaleScores || hasStaleWinner) cleared++
       }
     }
   }
 
-  if (knockoutChanged) {
-    try {
-      await recomputeBracketCascade()
-    } catch (err) {
-      errors.push(`bracket recompute: ${String(err)}`)
-    }
-  }
+  // Always rebuild the full knockout cascade after syncing results
+  const cascade = await rebuildKnockoutCascade()
+  errors.push(...cascade.errors)
 
-  return { updated, errors }
+  return { updated, cleared, cascadeAssigned: cascade.assigned, cascadeEmptied: cascade.emptied, errors }
 }

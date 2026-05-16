@@ -82,6 +82,7 @@ export interface MatchWithTeams {
   group_letter: string | null
   home_team_id: number | null
   away_team_id: number | null
+  scheduled_at: string | null
   home_team: Team | null
   away_team: Team | null
 }

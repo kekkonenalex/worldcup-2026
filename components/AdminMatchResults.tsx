@@ -275,12 +275,13 @@ export default function AdminMatchResults({ matches, teams, hasSomeExternalIds }
     setSyncState({ status: 'loading', message: '' })
     try {
       const res = await fetch('/api/admin/sync-now', { method: 'POST' })
-      const body = await res.json() as { updated?: number; errors?: string[]; error?: string }
+      const body = await res.json() as { updated?: number; cleared?: number; cascadeAssigned?: number; cascadeEmptied?: number; errors?: string[]; error?: string }
       if (!res.ok) {
         setSyncState({ status: 'error', message: body.error ?? 'Unknown error' })
       } else {
         const errs = body.errors?.length ? ` (${body.errors.length} errors)` : ''
-        setSyncState({ status: 'success', message: `Updated ${body.updated ?? 0} matches${errs}` })
+        const cascade = `cascade: ${body.cascadeAssigned ?? 0} assigned, ${body.cascadeEmptied ?? 0} emptied`
+        setSyncState({ status: 'success', message: `Updated ${body.updated ?? 0}, cleared ${body.cleared ?? 0} — ${cascade}${errs}` })
         router.refresh()
       }
     } catch (e) {
