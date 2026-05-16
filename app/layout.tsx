@@ -34,11 +34,26 @@ export default function RootLayout({
       className={`${anton.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="bg-bg-base text-fg-primary font-sans min-h-screen flex flex-col">
-        <Navbar />
-        <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-8">
-          {children}
-        </main>
-        <Footer />
+        {/* Trophy watermark — sits behind all content */}
+        <div
+          className="fixed inset-0 pointer-events-none"
+          style={{
+            backgroundImage: "url('/images/trophy-bg.jpg')",
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'center center',
+            backgroundSize: 'cover',
+            opacity: 0.12,
+            zIndex: 0,
+          }}
+        />
+        {/* All page content sits above the watermark */}
+        <div className="relative flex flex-col min-h-screen" style={{ zIndex: 1 }}>
+          <Navbar />
+          <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-8">
+            {children}
+          </main>
+          <Footer />
+        </div>
       </body>
     </html>
   )

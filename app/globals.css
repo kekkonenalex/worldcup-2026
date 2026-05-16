@@ -91,23 +91,3 @@ select:not(.score-pill-field) {
 
 /* ── Background watermark ───────────────────────────────────────────────────── */
 
-body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-image: url('/images/trophy-bg.jpg');
-  background-repeat: no-repeat;
-  background-position: center center;
-  background-size: cover;
-  opacity: 0.12;
-  pointer-events: none;
-  z-index: 0;
-}
-
-body > * {
-  position: relative;
-  z-index: 1;
-}
