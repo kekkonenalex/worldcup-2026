@@ -276,7 +276,7 @@ export async function syncMatchResults(apiKey: string): Promise<SyncResult> {
   // ── Step 1: Wipe all knockout results unconditionally ────────────────────────
   const { data: wipedRows } = await supabase
     .from('matches')
-    .update({ winner_team_id: null, home_score: null, away_score: null } as never)
+    .update({ winner_team_id: null, home_score: null, away_score: null, status: 'scheduled' } as never)
     .neq('stage', 'group')
     .select('id')
 
