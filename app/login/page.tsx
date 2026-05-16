@@ -51,10 +51,9 @@ export default function LoginPage() {
     setLinkLoading(true)
     setLinkError(null)
     const supabase = createClient()
-    const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback${isReset ? '?reset=true' : ''}`
     const { error } = await supabase.auth.signInWithOtp({
       email: linkEmail.trim(),
-      options: { emailRedirectTo: redirectTo },
+      options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback` },
     })
     setLinkLoading(false)
     if (error) setLinkError(error.message)
