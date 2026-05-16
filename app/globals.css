@@ -97,8 +97,8 @@ body::before {
   inset: 0;
   background-image: url('/images/trophy-bg.jpg');
   background-repeat: no-repeat;
-  background-position: center 15%;
-  background-size: auto 75vh;
+  background-position: center center;
+  background-size: 85% auto;
   opacity: 0.12;
   pointer-events: none;
   z-index: 0;
