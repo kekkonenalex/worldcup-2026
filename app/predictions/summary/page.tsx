@@ -32,6 +32,7 @@ export type GroupMatchSummary = {
   away_code: string
   home_score: number | null
   away_score: number | null
+  scheduled_at: string | null
 }
 
 export type CompletionStatus = {
@@ -64,7 +65,7 @@ export default async function SummaryPage() {
   const { data: rawMatches } = await supabase
     .from('matches')
     .select(`
-      id, match_number, group_letter, home_team_id, away_team_id,
+      id, match_number, group_letter, home_team_id, away_team_id, scheduled_at,
       home_team:teams!matches_home_team_id_fkey(id, name, short_code, group_letter, flag_emoji),
       away_team:teams!matches_away_team_id_fkey(id, name, short_code, group_letter, flag_emoji)
     `)
@@ -134,6 +135,7 @@ export default async function SummaryPage() {
       away_code: m.away_team?.short_code ?? '',
       home_score: pred?.predicted_home_score ?? null,
       away_score: pred?.predicted_away_score ?? null,
+      scheduled_at: m.scheduled_at ?? null,
     }
   })
 

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { TeamBadge } from '@/components/ui/TeamBadge'
+import { MatchTime } from '@/components/ui/MatchTime'
 import { STAGE_ORDER, STAGE_LABELS, type ResolvedMatch } from '@/lib/bracket'
 import { PREDICTION_DEADLINE } from '@/lib/config'
 import type { TeamStanding } from '@/lib/simulation'
@@ -106,8 +107,11 @@ function GroupPredictionsSection({
                 <span className="flex-1 flex justify-end">
                   <TeamBadge name={m.home_name} abbreviation={m.home_code} size="sm" />
                 </span>
-                <span className="font-mono tabular-nums text-fg-primary mx-1 shrink-0 w-12 text-center">
-                  {m.home_score !== null ? `${m.home_score} — ${m.away_score}` : '— vs —'}
+                <span className="flex flex-col items-center mx-1 shrink-0 w-20 gap-0.5">
+                  <MatchTime iso={m.scheduled_at} className="text-xs text-fg-muted leading-none" />
+                  <span className="font-mono tabular-nums text-fg-primary text-xs">
+                    {m.home_score !== null ? `${m.home_score} — ${m.away_score}` : 'vs'}
+                  </span>
                 </span>
                 <span className="flex-1">
                   <TeamBadge name={m.away_name} abbreviation={m.away_code} size="sm" />

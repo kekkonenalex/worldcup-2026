@@ -288,13 +288,14 @@ export async function syncMatchResults(apiKey: string): Promise<SyncResult> {
 
   const { data: ourMatchesRaw } = await supabase
     .from('matches')
-    .select('id, stage, external_id, home_score, away_score, status, winner_team_id, home_team_id, away_team_id')
+    .select('id, stage, external_id, home_score, away_score, status, winner_team_id, home_team_id, away_team_id, scheduled_at')
     .not('external_id', 'is', null)
 
   type OurMatch = {
     id: number; stage: string; external_id: number
     home_score: number | null; away_score: number | null; status: string
     winner_team_id: number | null; home_team_id: number | null; away_team_id: number | null
+    scheduled_at: string | null
   }
   const ourMatches = (ourMatchesRaw ?? []) as unknown as OurMatch[]
 
@@ -313,19 +314,19 @@ export async function syncMatchResults(apiKey: string): Promise<SyncResult> {
       if (newStatus === 'finished') {
         const newHome = fd.score.fullTime.home
         const newAway = fd.score.fullTime.away
-        if (m.status === newStatus && m.home_score === newHome && m.away_score === newAway) continue
+        if (m.status === newStatus && m.home_score === newHome && m.away_score === newAway && m.scheduled_at === fd.utcDate) continue
         const { error } = await supabase
           .from('matches')
-          .update({ status: newStatus, home_score: newHome, away_score: newAway } as never)
+          .update({ status: newStatus, home_score: newHome, away_score: newAway, scheduled_at: fd.utcDate } as never)
           .eq('id', m.id)
         if (error) errors.push(`group match ${m.id}: ${error.message}`)
         else groupUpdated++
       } else {
-        const hasStale = m.home_score !== null || m.away_score !== null || m.status !== newStatus
+        const hasStale = m.home_score !== null || m.away_score !== null || m.status !== newStatus || m.scheduled_at !== fd.utcDate
         if (hasStale) {
           const { error } = await supabase
             .from('matches')
-            .update({ status: newStatus, home_score: null, away_score: null } as never)
+            .update({ status: newStatus, home_score: null, away_score: null, scheduled_at: fd.utcDate } as never)
             .eq('id', m.id)
           if (error) errors.push(`group match ${m.id} (clear): ${error.message}`)
           else groupCleared++
@@ -342,14 +343,14 @@ export async function syncMatchResults(apiKey: string): Promise<SyncResult> {
 
         const { error } = await supabase
           .from('matches')
-          .update({ status: newStatus, home_score: newHome, away_score: newAway, winner_team_id: winnerTeamId } as never)
+          .update({ status: newStatus, home_score: newHome, away_score: newAway, winner_team_id: winnerTeamId, scheduled_at: fd.utcDate } as never)
           .eq('id', m.id)
         if (error) errors.push(`knockout match ${m.id}: ${error.message}`)
         else knockoutUpdated++
       } else {
         // Set status to reflect API state (scores already null from step 1)
-        if (m.status !== newStatus) {
-          await supabase.from('matches').update({ status: newStatus } as never).eq('id', m.id)
+        if (m.status !== newStatus || m.scheduled_at !== fd.utcDate) {
+          await supabase.from('matches').update({ status: newStatus, scheduled_at: fd.utcDate } as never).eq('id', m.id)
         }
       }
     }

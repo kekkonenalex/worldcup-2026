@@ -85,7 +85,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
 
   if (access.allowed) {
     const [{ data: rawMatches }, { data: rawGroupPreds }, { data: rawKoPreds }, { data: awardRows }] = await Promise.all([
-      supabase.from('matches').select(`id, match_number, group_letter, home_team_id, away_team_id, home_team:teams!matches_home_team_id_fkey(id, name, short_code, group_letter, flag_emoji), away_team:teams!matches_away_team_id_fkey(id, name, short_code, group_letter, flag_emoji)`).eq('stage', 'group').order('match_number', { ascending: true }),
+      supabase.from('matches').select(`id, match_number, group_letter, home_team_id, away_team_id, scheduled_at, home_team:teams!matches_home_team_id_fkey(id, name, short_code, group_letter, flag_emoji), away_team:teams!matches_away_team_id_fkey(id, name, short_code, group_letter, flag_emoji)`).eq('stage', 'group').order('match_number', { ascending: true }),
       supabase.from('group_predictions').select('*').eq('user_id', targetUserId),
       supabase.from('knockout_predictions').select('*').eq('user_id', targetUserId),
       supabase.from('award_predictions').select('*').eq('user_id', targetUserId).limit(1),
@@ -105,7 +105,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
 
     groupMatchSummaries = matches.map(m => {
       const pred = predMap.get(m.id)
-      return { match_number: m.match_number, group_letter: m.group_letter ?? '', home_name: m.home_team?.name ?? '', home_flag: m.home_team?.flag_emoji ?? '', home_code: m.home_team?.short_code ?? '', away_name: m.away_team?.name ?? '', away_flag: m.away_team?.flag_emoji ?? '', away_code: m.away_team?.short_code ?? '', home_score: pred?.predicted_home_score ?? null, away_score: pred?.predicted_away_score ?? null }
+      return { match_number: m.match_number, group_letter: m.group_letter ?? '', home_name: m.home_team?.name ?? '', home_flag: m.home_team?.flag_emoji ?? '', home_code: m.home_team?.short_code ?? '', away_name: m.away_team?.name ?? '', away_flag: m.away_team?.flag_emoji ?? '', away_code: m.away_team?.short_code ?? '', home_score: pred?.predicted_home_score ?? null, away_score: pred?.predicted_away_score ?? null, scheduled_at: m.scheduled_at ?? null }
     })
 
     if (groupComplete) {
