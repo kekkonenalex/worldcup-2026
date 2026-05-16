@@ -1,4 +1,5 @@
 import { Card } from '@/components/ui/Card'
+import { TeamBadge } from '@/components/ui/TeamBadge'
 
 interface TeamRow {
   name: string
@@ -40,9 +41,8 @@ export function GroupStandingsTable({ groupLetter, teams, complete }: GroupStand
         <tbody>
           {displayTeams.map((t, i) => (
             <tr key={t.name} className={`border-b border-border-subtle/40 ${i < 2 ? 'text-fg-primary' : 'text-fg-secondary'}`}>
-              <td className="py-1.5 flex items-center gap-1.5">
-                {t.flag && <span>{t.flag}</span>}
-                <span className="font-semibold uppercase tracking-wider">{t.abbreviation}</span>
+              <td className="py-1.5">
+                <TeamBadge name={t.name} abbreviation={t.abbreviation} size="sm" />
               </td>
               <td className="text-center px-2 tabular-nums">{t.w}</td>
               <td className="text-center px-2 tabular-nums">{t.d}</td>

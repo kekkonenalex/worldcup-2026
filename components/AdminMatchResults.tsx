@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { TeamBadge } from '@/components/ui/TeamBadge'
 import {
   saveGroupMatchResult,
   saveKnockoutWinner,
@@ -167,8 +168,8 @@ function GroupStandingsTable({ standings }: { standings: TeamStanding[] }) {
         <tbody>
           {standings.map((s, i) => (
             <tr key={s.team_id} className={`border-b border-border-subtle/50 ${i < 2 ? 'text-green-400' : i === 2 ? 'text-amber-500' : ''}`}>
-              <td className="py-1 pr-2 font-medium">
-                {s.flag_emoji} {s.short_code}
+              <td className="py-1 pr-2">
+                <TeamBadge name={s.team_name} abbreviation={s.short_code} size="sm" />
               </td>
               <td className="text-center px-1 tabular-nums">{s.played}</td>
               <td className="text-center px-1 tabular-nums">{s.won}</td>
@@ -275,13 +276,13 @@ export default function AdminMatchResults({ matches, teams, hasSomeExternalIds }
     setSyncState({ status: 'loading', message: '' })
     try {
       const res = await fetch('/api/admin/sync-now', { method: 'POST' })
-      const body = await res.json() as { updated?: number; cleared?: number; cascadeAssigned?: number; cascadeEmptied?: number; errors?: string[]; error?: string }
+      const body = await res.json() as { clearedKnockout?: number; groupUpdated?: number; groupCleared?: number; knockoutUpdated?: number; cascadeAssigned?: number; cascadeEmptied?: number; errors?: string[]; error?: string }
       if (!res.ok) {
         setSyncState({ status: 'error', message: body.error ?? 'Unknown error' })
       } else {
-        const errs = body.errors?.length ? ` (${body.errors.length} errors)` : ''
-        const cascade = `cascade: ${body.cascadeAssigned ?? 0} assigned, ${body.cascadeEmptied ?? 0} emptied`
-        setSyncState({ status: 'success', message: `Updated ${body.updated ?? 0}, cleared ${body.cleared ?? 0} — ${cascade}${errs}` })
+        const errs = body.errors?.length ? ` · ${body.errors.length} error(s)` : ''
+        const msg = `Cleared ${body.clearedKnockout ?? 0} knockout slots · Group: ${body.groupUpdated ?? 0} updated, ${body.groupCleared ?? 0} cleared · Knockout API: ${body.knockoutUpdated ?? 0} updated · Cascade: ${body.cascadeAssigned ?? 0} assigned${errs}`
+        setSyncState({ status: 'success', message: msg })
         router.refresh()
       }
     } catch (e) {
@@ -424,8 +425,10 @@ export default function AdminMatchResults({ matches, teams, hasSomeExternalIds }
                       <div key={m.id} className="px-5 py-3">
                         <div className="flex items-center gap-2 flex-wrap">
                           {/* Home */}
-                          <span className="text-sm text-fg-secondary min-w-0 flex-1 text-right">
-                            {m.home_team?.flag_emoji} {m.home_team?.short_code ?? '?'}
+                          <span className="min-w-0 flex-1 flex justify-end">
+                            {m.home_team
+                              ? <TeamBadge name={m.home_team.name} abbreviation={m.home_team.short_code} size="sm" />
+                              : <span className="text-sm text-fg-muted">?</span>}
                           </span>
 
                           {/* Scores */}
@@ -444,8 +447,10 @@ export default function AdminMatchResults({ matches, teams, hasSomeExternalIds }
                           </div>
 
                           {/* Away */}
-                          <span className="text-sm text-fg-secondary min-w-0 flex-1">
-                            {m.away_team?.short_code ?? '?'} {m.away_team?.flag_emoji}
+                          <span className="min-w-0 flex-1">
+                            {m.away_team
+                              ? <TeamBadge name={m.away_team.name} abbreviation={m.away_team.short_code} size="sm" />
+                              : <span className="text-sm text-fg-muted">?</span>}
                           </span>
 
                           {/* Status + saving */}
@@ -503,9 +508,9 @@ export default function AdminMatchResults({ matches, teams, hasSomeExternalIds }
                       >
                         {team ? (
                           <>
-                            <div className="text-2xl mb-1">{team.flag_emoji}</div>
-                            <div className="text-sm font-semibold text-fg-primary">{team.short_code}</div>
-                            <div className="text-xs text-fg-muted truncate">{team.name}</div>
+                            <div className="flex justify-center mb-1">
+                              <TeamBadge name={team.name} abbreviation={team.short_code} size="md" />
+                            </div>
                             {isWinner && <div className="text-xs text-green-400 mt-1 font-medium">✓ Winner</div>}
                           </>
                         ) : (
@@ -528,7 +533,7 @@ export default function AdminMatchResults({ matches, teams, hasSomeExternalIds }
                             : 'border border-border-subtle text-fg-muted hover:text-fg-primary hover:border-border-strong'
                         }`}
                       >
-                        {homeTeam.flag_emoji} {homeTeam.short_code}
+                        <TeamBadge name={homeTeam.name} abbreviation={homeTeam.short_code} size="sm" />
                       </button>
                       <button
                         onClick={() => onSetWinner(m.id, awayTeam.id)}
@@ -539,7 +544,7 @@ export default function AdminMatchResults({ matches, teams, hasSomeExternalIds }
                             : 'border border-border-subtle text-fg-muted hover:text-fg-primary hover:border-border-strong'
                         }`}
                       >
-                        {awayTeam.flag_emoji} {awayTeam.short_code}
+                        <TeamBadge name={awayTeam.name} abbreviation={awayTeam.short_code} size="sm" />
                       </button>
                       {st.winnerTeamId !== null && (
                         <button

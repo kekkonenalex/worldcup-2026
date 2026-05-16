@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { TeamBadge } from '@/components/ui/TeamBadge'
 import { STAGE_ORDER, STAGE_LABELS, type ResolvedMatch } from '@/lib/bracket'
 import { PREDICTION_DEADLINE } from '@/lib/config'
 import type { TeamStanding } from '@/lib/simulation'
@@ -71,14 +72,8 @@ function TeamButton({ team, isPicked, isSaved, isPending, isLocked, onClick }: T
       ].join(' ')}
     >
       <div className="flex items-center gap-2">
-        <span className="text-lg">{team.flag_emoji}</span>
-        <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
-            <span className="font-semibold text-sm text-fg-primary">{team.short_code}</span>
-            <span className="text-xs text-fg-muted bg-bg-elevated px-1 rounded">{team.group_letter}</span>
-          </div>
-          <div className="text-xs text-fg-muted truncate">{team.team_name}</div>
-        </div>
+        <TeamBadge name={team.team_name} abbreviation={team.short_code} size="sm" />
+        <span className="text-xs text-fg-muted bg-bg-elevated px-1 rounded shrink-0">{team.group_letter}</span>
         {picked && (
           <div className="ml-auto shrink-0">
             {isSaved

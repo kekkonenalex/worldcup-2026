@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { TeamBadge } from '@/components/ui/TeamBadge'
 import type { TeamStanding, ThirdPlaceResult } from '@/lib/simulation'
 
 interface Props {
@@ -58,9 +59,7 @@ function GroupCard({ standings }: { standings: TeamStanding[] }) {
               <tr key={s.team_id} className={`border-b border-border-subtle/50 last:border-0 ${rowBg(s.position)}`}>
                 <td className="px-2 py-1.5 text-center text-fg-muted">{s.position}</td>
                 <td className="px-2 py-1.5">
-                  <span title={s.team_name} className="cursor-default">
-                    {s.flag_emoji} {s.short_code}
-                  </span>
+                  <TeamBadge name={s.team_name} abbreviation={s.short_code} size="sm" />
                 </td>
                 <td className="px-1 py-1.5 text-center text-fg-secondary">{s.played}</td>
                 <td className="px-1 py-1.5 text-center text-fg-secondary">{s.won}</td>
@@ -128,9 +127,8 @@ export default function StandingsReview({ groupStandings, thirdPlaceResult, adva
                       className={`border-b border-border-subtle/50 last:border-0 ${advances ? 'bg-green-900/20' : 'bg-status-live/5'}`}
                     >
                       <td className="px-3 py-2.5 text-center text-fg-muted tabular-nums">{rank}</td>
-                      <td className="px-3 py-2.5 text-fg-secondary">
-                        <span className="mr-1.5">{team.flag_emoji}</span>
-                        {team.team_name}
+                      <td className="px-3 py-2.5">
+                        <TeamBadge name={team.team_name} abbreviation={team.short_code} size="sm" />
                       </td>
                       <td className="px-3 py-2.5 text-center text-fg-muted">{team.group_letter}</td>
                       <td className="px-3 py-2.5 text-center font-bold text-fg-primary">{team.points}</td>
@@ -160,10 +158,9 @@ export default function StandingsReview({ groupStandings, thirdPlaceResult, adva
           {advancingTeams.map(team => (
             <div
               key={`${team.team_id}-${team.group_letter}`}
-              className={`rounded-lg border p-2 text-center ${qualBorder(team.position)}`}
+              className={`rounded-lg border p-2 flex items-center justify-center ${qualBorder(team.position)}`}
             >
-              <div className="text-xl">{team.flag_emoji}</div>
-              <div className="text-xs font-medium mt-0.5 leading-tight text-fg-secondary">{team.team_name}</div>
+              <TeamBadge name={team.team_name} abbreviation={team.short_code} size="sm" />
             </div>
           ))}
         </div>

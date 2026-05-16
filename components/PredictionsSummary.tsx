@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { TeamBadge } from '@/components/ui/TeamBadge'
 import { STAGE_ORDER, STAGE_LABELS, type ResolvedMatch } from '@/lib/bracket'
 import { PREDICTION_DEADLINE } from '@/lib/config'
 import type { TeamStanding } from '@/lib/simulation'
@@ -132,9 +133,8 @@ function QualifyingTeamsSection({ advancingTeams }: { advancingTeams: TeamStandi
       <div className="text-xs text-fg-muted font-medium mb-2">{label}</div>
       <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5">
         {teams.map(t => (
-          <div key={t.team_id} className={`rounded border ${borderCls} px-2 py-1.5 text-center`}>
-            <div className="text-base">{t.flag_emoji}</div>
-            <div className="text-xs font-medium text-fg-secondary leading-tight">{t.short_code}</div>
+          <div key={t.team_id} className={`rounded border ${borderCls} px-2 py-1.5 flex items-center justify-center`}>
+            <TeamBadge name={t.team_name} abbreviation={t.short_code} size="sm" />
           </div>
         ))}
       </div>
@@ -199,14 +199,14 @@ function KnockoutSection({
                 return (
                   <div key={m.match_number} className="flex items-center gap-2 text-sm px-3 py-2 rounded-lg bg-bg-elevated/40">
                     <span className="text-xs text-fg-muted w-24 shrink-0">{m.label}</span>
-                    <span className={pickedA ? 'text-accent font-semibold' : 'text-fg-muted'}>
-                      {m.team_a ? `${m.team_a.flag_emoji} ${m.team_a.short_code}` : 'TBD'}
+                    <span className={pickedA ? 'opacity-100' : 'opacity-50'}>
+                      {m.team_a ? <TeamBadge name={m.team_a.team_name} abbreviation={m.team_a.short_code} size="sm" /> : <span className="text-xs text-fg-muted">TBD</span>}
                     </span>
                     {pickedA && <span className="text-accent text-xs">✓</span>}
                     <span className="text-fg-muted text-xs">vs</span>
                     {pickedB && <span className="text-accent text-xs">✓</span>}
-                    <span className={pickedB ? 'text-accent font-semibold' : 'text-fg-muted'}>
-                      {m.team_b ? `${m.team_b.flag_emoji} ${m.team_b.short_code}` : 'TBD'}
+                    <span className={pickedB ? 'opacity-100' : 'opacity-50'}>
+                      {m.team_b ? <TeamBadge name={m.team_b.team_name} abbreviation={m.team_b.short_code} size="sm" /> : <span className="text-xs text-fg-muted">TBD</span>}
                     </span>
                     {noPick && <span className="ml-auto text-xs text-fg-muted">no pick</span>}
                   </div>

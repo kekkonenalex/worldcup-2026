@@ -16,6 +16,7 @@ import {
 import { resolveBracket, type BracketContext, type ResolvedMatch } from '@/lib/bracket'
 import PredictionsSummary from '@/components/PredictionsSummary'
 import { Card } from '@/components/ui/Card'
+import { TeamBadge } from '@/components/ui/TeamBadge'
 import type { MatchWithTeams, GroupPrediction, KnockoutPrediction, AwardPrediction, Profile } from '@/types/database'
 import type { GroupMatchSummary, CompletionStatus } from '@/app/predictions/summary/page'
 import type { UserScoreBreakdown } from '@/lib/scoring'
@@ -201,11 +202,8 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
             <div className="text-xs uppercase tracking-wider text-accent mb-2">Predicted Champion</div>
             {predictedChampion ? (
               <div className="flex items-center gap-3">
-                <span className="text-4xl">{predictedChampion.flag_emoji}</span>
-                <div>
-                  <div className="text-lg font-bold text-fg-primary">{predictedChampion.team_name}</div>
-                  <div className="text-xs text-fg-muted">🏆 Locked in</div>
-                </div>
+                <TeamBadge name={predictedChampion.team_name} abbreviation={predictedChampion.short_code} size="lg" />
+                <div className="text-xs text-fg-muted">🏆 Locked in</div>
               </div>
             ) : (
               <p className="text-fg-muted text-sm">Complete your knockout bracket to reveal.</p>
@@ -215,7 +213,9 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
             <Card>
               <div className="text-xs uppercase tracking-wider text-fg-muted mb-1">Runner-Up</div>
               <div className="text-sm font-semibold text-fg-primary">
-                {predictedRunnerUp ? `${predictedRunnerUp.flag_emoji} ${predictedRunnerUp.team_name}` : '—'}
+                {predictedRunnerUp
+                  ? <TeamBadge name={predictedRunnerUp.team_name} abbreviation={predictedRunnerUp.short_code} size="sm" />
+                  : '—'}
               </div>
             </Card>
             <Card>
