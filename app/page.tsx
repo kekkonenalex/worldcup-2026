@@ -23,7 +23,6 @@ export default async function Home() {
 
   return (
     <div className="pb-16">
-      <img src="/images/trophy-bg.avif" alt="test" style={{ width: '300px' }} />
       {/* ── Hero ── */}
       <section className="py-16 md:py-24 text-center max-w-3xl mx-auto">
         <h1 className="text-5xl md:text-7xl font-display tracking-wide uppercase text-fg-primary mb-4 leading-none">
