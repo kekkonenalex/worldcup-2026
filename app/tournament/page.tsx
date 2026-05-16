@@ -195,14 +195,14 @@ export default async function TournamentPage() {
         <SectionHeading>Golden Boot</SectionHeading>
         <Card>
           <div className="flex items-start gap-4">
-            <span className="text-3xl">⚽</span>
+            <img src="/images/golden-boot.webp" alt="Golden Boot" className="w-20 h-20 object-contain shrink-0" />
             <div>
               <h3 className="font-display text-accent tracking-wider text-lg mb-1">GOLDEN BOOT</h3>
               <p className="text-fg-secondary text-sm mb-3">
                 The race for the tournament&apos;s top goalscorer.
               </p>
               <p className="text-xs text-fg-muted bg-bg-elevated rounded px-3 py-2 font-mono">
-                Top scorers will appear here once data syncs from football-data.org
+                Top scorers will appear here
               </p>
             </div>
           </div>

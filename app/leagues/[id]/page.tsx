@@ -90,7 +90,10 @@ export default async function LeagueDetailPage({ params }: { params: Promise<{ i
       <LeagueDetail league={league} members={members} currentUserId={user.id} isPastDeadline={isPastDeadline()} />
 
       <div className="mt-8">
-        <h2 className="text-2xl font-display tracking-wider uppercase text-fg-primary mb-4">League Standings</h2>
+        <h2 className="text-2xl font-display tracking-wider uppercase text-fg-primary mb-1">League Standings</h2>
+        <p className="text-fg-muted text-sm mb-4">
+          {!isPastDeadline() ? 'Predictions still open — scores calculated after each matchday' : 'Scores calculated after each matchday'}
+        </p>
         {leagueRanked.length === 0 ? (
           <p className="text-fg-muted text-sm">No scores yet — standings appear once match results are entered.</p>
         ) : (

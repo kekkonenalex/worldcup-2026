@@ -1,3 +1,5 @@
+import { getFlagUrl } from '@/lib/team-flags'
+
 export type TeamBadgeProps = {
   teamId?: string
   name: string
@@ -11,12 +13,19 @@ const textSize   = { sm: 'text-xs', md: 'text-sm', lg: 'text-base' }
 const gapSize    = { sm: 'gap-1.5', md: 'gap-2', lg: 'gap-2.5' }
 
 export function TeamBadge({ name, abbreviation, flag, size = 'md' }: TeamBadgeProps) {
+  const flagUrl = getFlagUrl(abbreviation)
+  if (!flagUrl && !flag) {
+    console.warn(`TeamBadge: no flag mapped for abbreviation "${abbreviation}"`)
+  }
+
   return (
     <div className={`inline-flex items-center ${gapSize[size]}`}>
       <div
-        className={`${avatarSize[size]} rounded-full bg-bg-card border border-border-subtle flex items-center justify-center shrink-0 leading-none`}
+        className={`${avatarSize[size]} rounded-full bg-bg-card border border-border-subtle flex items-center justify-center shrink-0 leading-none overflow-hidden`}
       >
-        {flag ? (
+        {flagUrl ? (
+          <img src={flagUrl} alt={name} className="w-full h-full object-cover" />
+        ) : flag ? (
           <span>{flag}</span>
         ) : (
           <span className="text-fg-muted font-semibold">{name[0]}</span>

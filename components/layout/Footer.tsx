@@ -25,7 +25,7 @@ export default function Footer() {
         ))}
       </div>
       <p className="text-xs text-fg-muted">
-        © 2026 FIFA World Cup Predictor — built for friends, not affiliated with FIFA.
+        © 2026 FIFA World Cup Predictor — not affiliated with FIFA.
       </p>
     </footer>
   )

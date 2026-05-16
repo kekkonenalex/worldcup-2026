@@ -1,13 +1,13 @@
 import type { Metadata } from 'next'
-import { Bebas_Neue, Inter } from 'next/font/google'
+import { Anton, Inter } from 'next/font/google'
 import './globals.css'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 
-const bebasNeue = Bebas_Neue({
-  weight: '400',
-  variable: '--font-bebas',
+const anton = Anton({
   subsets: ['latin'],
+  weight: '400',
+  variable: '--font-anton',
   display: 'swap',
 })
 
@@ -31,7 +31,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${bebasNeue.variable} ${inter.variable} h-full antialiased`}
+      className={`${anton.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="bg-bg-base text-fg-primary font-sans min-h-screen flex flex-col">
         <Navbar />

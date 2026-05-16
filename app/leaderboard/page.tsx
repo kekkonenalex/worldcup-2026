@@ -16,12 +16,9 @@ export default async function LeaderboardPage() {
   const scores = await getAllUserScores(supabase)
   const locked = isPastDeadline()
 
-  const hasResults = scores.some(s => (s.breakdown as UserScoreBreakdown).total > 0)
   const subtitle = !locked
-    ? 'Predictions still open — final scores calculated after the deadline.'
-    : hasResults
-    ? 'Tournament in progress — scores update as match results are entered.'
-    : 'Deadline has passed — scores appear once match results are entered.'
+    ? 'Predictions still open — scores calculated after each matchday'
+    : 'Scores calculated after each matchday'
 
   return (
     <div className="pb-16">
