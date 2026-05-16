@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
@@ -17,6 +17,15 @@ export default function LoginPage() {
   const [linkLoading, setLinkLoading] = useState(false)
   const [linkError, setLinkError] = useState<string | null>(null)
   const [linkSent, setLinkSent] = useState(false)
+
+  useEffect(() => {
+    const hash = window.location.hash
+    if (hash.includes('error_code=otp_expired')) {
+      setMainError('This magic link has expired. Please request a new one below.')
+    } else if (hash.includes('error=access_denied')) {
+      setMainError('This link is no longer valid. Please request a new one below.')
+    }
+  }, [])
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault()
