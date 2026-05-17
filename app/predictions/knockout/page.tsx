@@ -15,7 +15,7 @@ import {
   type ResolvedMatch,
 } from '@/lib/bracket'
 import { isPastDeadline } from '@/lib/config'
-import KnockoutBracket from '@/components/KnockoutBracket'
+import KnockoutBracketWrapper from '@/components/bracket/KnockoutBracketWrapper'
 import Link from 'next/link'
 import type { MatchWithTeams, GroupPrediction, KnockoutPrediction } from '@/types/database'
 
@@ -149,7 +149,7 @@ export default async function KnockoutPage() {
         </p>
       </div>
 
-      <KnockoutBracket
+      <KnockoutBracketWrapper
         resolvedMatches={resolvedMatches}
         advancingTeams={advancingTeams}
         isLocked={isLocked}

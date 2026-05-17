@@ -28,7 +28,14 @@
       "Bash(cat next.config.js)",
       "Bash(Get-ChildItem -Recurse -Include \"*.ts\",\"*.tsx\" app,lib,components)",
       "Bash(Select-String \"rankUsers|leaderboard\")",
-      "Bash(Select-Object Path -Unique)"
+      "Bash(Select-Object Path -Unique)",
+      "Bash(git log *)",
+      "Bash(grep -oP 'eyJ[A-Za-z0-9_-]{10,}\\\\.eyJ[A-Za-z0-9_-]+')",
+      "Bash(grep -oP 're_[a-zA-Z0-9]{20,}')",
+      "Bash(grep -E 'eyJ[A-Za-z0-9_-]{10,}\\\\.eyJ[A-Za-z0-9_-]+')",
+      "Bash(grep -E 're_[a-zA-Z0-9]{20,}')",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/bracket-demo)",
+      "Bash(curl -s http://localhost:3000/bracket-demo)"
     ]
   }
 }

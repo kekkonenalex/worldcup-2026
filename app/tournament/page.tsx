@@ -1,5 +1,4 @@
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import {
   computeActualStandings,
@@ -7,25 +6,16 @@ import {
   type ActualResultInput,
   type TeamInput,
 } from '@/lib/simulation'
-import { BRACKET_STRUCTURE } from '@/lib/bracket'
+import { BRACKET_STRUCTURE, type ResolvedMatch } from '@/lib/bracket'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { GroupStandingsTable } from '@/components/ui/GroupStandingsTable'
-import { MatchCard } from '@/components/ui/MatchCard'
-import { MatchTime } from '@/components/ui/MatchTime'
 import { Card } from '@/components/ui/Card'
+import { BracketView } from '@/components/bracket/BracketView'
+import type { TeamStanding } from '@/lib/simulation'
 
 export const dynamic = 'force-dynamic'
 
 const GROUP_LETTERS = 'ABCDEFGHIJKL'.split('')
-
-const STAGE_LABELS: Record<string, string> = {
-  r32: 'Round of 32',
-  r16: 'Round of 16',
-  qf: 'Quarter-Finals',
-  sf: 'Semi-Finals',
-  third_place: 'Third Place',
-  final: 'Final',
-}
 
 type RawMatch = {
   id: number
@@ -37,6 +27,7 @@ type RawMatch = {
   scheduled_at: string | null
   home_score: number | null
   away_score: number | null
+  winner_team_id: number | null
   status: string
   home_team: { id: number; name: string; short_code: string; flag_emoji: string; group_letter: string } | null
   away_team: { id: number; name: string; short_code: string; flag_emoji: string; group_letter: string } | null
@@ -53,7 +44,7 @@ export default async function TournamentPage() {
       .select(`
         id, match_number, stage, group_letter,
         home_team_id, away_team_id, scheduled_at,
-        home_score, away_score, status,
+        home_score, away_score, winner_team_id, status,
         home_team:teams!matches_home_team_id_fkey(id, name, short_code, flag_emoji, group_letter),
         away_team:teams!matches_away_team_id_fkey(id, name, short_code, flag_emoji, group_letter)
       `)
@@ -112,17 +103,29 @@ export default async function TournamentPage() {
     }
   })
 
-  // ── Group knockout matches by stage ─────────────────────────────────────────
-
-  const knockoutByStage = new Map<string, RawMatch[]>()
-  const stageOrder = ['r32', 'r16', 'qf', 'sf', 'third_place', 'final']
-  for (const s of stageOrder) knockoutByStage.set(s, [])
-  for (const m of knockoutMatches) {
-    const bucket = knockoutByStage.get(m.stage)
-    if (bucket) bucket.push(m)
-  }
+  // ── Build bracket view data ──────────────────────────────────────────────────
 
   const bracketDefMap = new Map(BRACKET_STRUCTURE.map(d => [d.match_number, d]))
+
+  function rawTeamToStanding(t: { id: number; name: string; short_code: string; flag_emoji: string; group_letter: string }): TeamStanding {
+    return {
+      team_id: t.id, team_name: t.name, short_code: t.short_code,
+      flag_emoji: t.flag_emoji, group_letter: t.group_letter,
+      played: 0, won: 0, drawn: 0, lost: 0,
+      goals_for: 0, goals_against: 0, goal_difference: 0, points: 0, position: 0,
+    }
+  }
+
+  const knockoutResolved: ResolvedMatch[] = knockoutMatches.map(m => ({
+    match_number: m.match_number,
+    stage: m.stage as ResolvedMatch['stage'],
+    label: bracketDefMap.get(m.match_number)?.label ?? `Match ${m.match_number}`,
+    team_a: m.home_team ? rawTeamToStanding(m.home_team) : null,
+    team_b: m.away_team ? rawTeamToStanding(m.away_team) : null,
+    user_pick_team_id: null,
+  }))
+
+  const actualWinnerMap = new Map(knockoutMatches.map(m => [m.match_number, m.winner_team_id]))
 
   return (
     <div className="pb-16">
@@ -153,44 +156,13 @@ export default async function TournamentPage() {
 
       {/* ── Knockout Phase ── */}
       <section className="mb-12">
-        <SectionHeading action={{ label: 'Full Bracket', href: '/tournament/bracket' }}>
-          Knockout Phase
-        </SectionHeading>
-
-        {stageOrder.map(stage => {
-          const stageMatches = knockoutByStage.get(stage) ?? []
-          if (stageMatches.length === 0) return null
-          return (
-            <div key={stage} className="mb-8">
-              <p className="text-xs font-semibold uppercase tracking-wider text-fg-muted mb-3">
-                {STAGE_LABELS[stage] ?? stage}
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {stageMatches.map(m => {
-                  const def = bracketDefMap.get(m.match_number)
-                  const label = def?.label ?? `Match ${m.match_number}`
-                  const matchStatus = m.status === 'finished' ? 'result'
-                    : m.status === 'live' ? 'live'
-                    : 'upcoming'
-
-                  return (
-                    <MatchCard
-                      key={m.id}
-                      groupOrStage={label}
-                      homeTeam={m.home_team ? { name: m.home_team.name, abbreviation: m.home_team.short_code, flag: m.home_team.flag_emoji } : null}
-                      awayTeam={m.away_team ? { name: m.away_team.name, abbreviation: m.away_team.short_code, flag: m.away_team.flag_emoji } : null}
-                      actual={m.home_score != null && m.away_score != null ? { home: m.home_score, away: m.away_score } : null}
-                      status={matchStatus as 'result' | 'live' | 'upcoming'}
-                      kickoffIso={m.scheduled_at}
-                      homeSlotLabel={!m.home_team ? `Winner M${m.home_team_id ?? '?'}` : undefined}
-                      awaySlotLabel={!m.away_team ? `Winner M${m.away_team_id ?? '?'}` : undefined}
-                    />
-                  )
-                })}
-              </div>
-            </div>
-          )
-        })}
+        <SectionHeading>Knockout Phase</SectionHeading>
+        <BracketView
+          resolvedMatches={knockoutResolved}
+          matchProps={(mn) => ({
+            actualWinnerId: actualWinnerMap.get(mn) ?? undefined,
+          })}
+        />
       </section>
 
       {/* ── Golden Boot ── */}
