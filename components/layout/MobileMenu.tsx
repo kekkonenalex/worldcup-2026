@@ -3,9 +3,11 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { NavLink } from '@/components/ui/NavLink'
+import { ProfileButton } from '@/components/layout/ProfileButton'
 
 interface MobileMenuProps {
   userId: string | null
+  userInitial: string | null
 }
 
 const NAV_LINKS = [
@@ -15,11 +17,14 @@ const NAV_LINKS = [
   { href: '/predictions', label: 'Predictions' },
 ]
 
-export function MobileMenu({ userId }: MobileMenuProps) {
+export function MobileMenu({ userId, userInitial }: MobileMenuProps) {
   const [open, setOpen] = useState(false)
 
   return (
-    <div className="md:hidden">
+    <div className="md:hidden flex items-center gap-2">
+      {userId && userInitial && (
+        <ProfileButton userId={userId} initial={userInitial} />
+      )}
       <button
         onClick={() => setOpen(o => !o)}
         aria-label="Toggle menu"

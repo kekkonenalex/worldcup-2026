@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { NavLink } from '@/components/ui/NavLink'
 import { MobileMenu } from '@/components/layout/MobileMenu'
+import { ProfileButton } from '@/components/layout/ProfileButton'
 
 const NAV_LINKS = [
   { href: '/', label: 'Home' },
@@ -44,13 +45,7 @@ export default async function Navbar() {
               >
                 Place Prediction
               </Link>
-              <Link
-                href={`/users/${user.id}`}
-                className="w-8 h-8 rounded-full bg-bg-card border border-border-strong flex items-center justify-center text-fg-secondary hover:text-fg-primary hover:border-accent transition-colors text-sm font-semibold"
-                aria-label="My profile"
-              >
-                {user.email?.[0]?.toUpperCase() ?? '?'}
-              </Link>
+              <ProfileButton userId={user.id} initial={user.email?.[0]?.toUpperCase() ?? '?'} />
             </>
           ) : (
             <Link
@@ -62,8 +57,8 @@ export default async function Navbar() {
           )}
         </div>
 
-        {/* Mobile hamburger */}
-        <MobileMenu userId={user?.id ?? null} />
+        {/* Mobile hamburger + profile */}
+        <MobileMenu userId={user?.id ?? null} userInitial={user?.email?.[0]?.toUpperCase() ?? null} />
       </nav>
     </header>
   )

@@ -12,7 +12,7 @@ const STEPS = [
 ]
 
 const CARDS = [
-  { label: 'My Vault', icon: '🔐', desc: 'Your personal prediction history and score breakdown.', href: '/users/[me]' },
+  { label: 'My Profile', icon: '🔐', desc: 'Your personal prediction history and score breakdown.', href: '/users/[me]' },
   { label: 'My Leagues', icon: '🏅', desc: 'Compete in private leagues with friends and colleagues.', href: '/leagues' },
   { label: 'Tournament Hub', icon: '🏆', desc: 'Live standings, bracket, golden boot, and more.', href: '/tournament' },
 ]

@@ -155,7 +155,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
       {/* Heading */}
       <div className="mt-3 mb-6">
         <h1 className="text-4xl font-display tracking-wide uppercase text-fg-primary">
-          {isSelf ? 'My Vault' : `${targetProfile.display_name}'s Vault`}
+          {isSelf ? 'My Profile' : `${targetProfile.display_name}'s Profile`}
           {isSelf && <span className="ml-3 text-fg-muted text-2xl font-normal">(you)</span>}
         </h1>
         {globalRank !== null && (
