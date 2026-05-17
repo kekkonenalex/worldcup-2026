@@ -20,7 +20,15 @@
       "Bash(npx supabase *)",
       "Bash(npx tsc *)",
       "Bash(npx tsx *)",
-      "PowerShell(New-Item *)"
+      "PowerShell(New-Item *)",
+      "Bash(find app *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\alexk\\\\OneDrive - Hanken Svenska handelshogskolan\\\\worldcup-2026\\\\app\" -Recurse -File -Include \"page.tsx\", \"actions.ts\")",
+      "Bash(Select-Object FullName)",
+      "Bash(cat next.config.ts)",
+      "Bash(cat next.config.js)",
+      "Bash(Get-ChildItem -Recurse -Include \"*.ts\",\"*.tsx\" app,lib,components)",
+      "Bash(Select-String \"rankUsers|leaderboard\")",
+      "Bash(Select-Object Path -Unique)"
     ]
   }
 }
