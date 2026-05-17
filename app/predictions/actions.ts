@@ -3,6 +3,7 @@
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { isPastDeadline, MAX_GOALS_PER_TEAM } from '@/lib/config'
+import { revalidateLeaderboard, revalidatePredictions } from '@/lib/cache'
 
 type SaveResult = { success: true } | { success: false; error: string }
 
@@ -61,5 +62,7 @@ export async function savePrediction(
     return { success: false, error: error.message }
   }
 
+  revalidatePredictions(user.id)
+  revalidateLeaderboard()
   return { success: true }
 }

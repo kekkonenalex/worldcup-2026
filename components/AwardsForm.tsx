@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useTransition, useOptimistic } from 'react'
 import Link from 'next/link'
 import { saveAwards } from '@/app/predictions/awards/actions'
 import type { AwardPrediction } from '@/types/database'
@@ -98,37 +98,45 @@ export default function AwardsForm({ initial, isLocked }: Props) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isFirstRender = useRef(true)
+  const [, startTransition] = useTransition()
+  const [optimisticFields, applyOptimisticFields] = useOptimistic(
+    fields,
+    (_: Fields, next: Fields) => next
+  )
 
   const completedCount = [
-    fields.goldenBootPlayer.trim(),
-    fields.goldenBootGoals,
-    fields.goldenBallPlayer.trim(),
-    fields.goldenGlovePlayer.trim(),
-    fields.bestYoungPlayer.trim(),
+    optimisticFields.goldenBootPlayer.trim(),
+    optimisticFields.goldenBootGoals,
+    optimisticFields.goldenBallPlayer.trim(),
+    optimisticFields.goldenGlovePlayer.trim(),
+    optimisticFields.bestYoungPlayer.trim(),
   ].filter(v => v !== '').length
 
   const triggerSave = useCallback((f: Fields) => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(async () => {
+    debounceRef.current = setTimeout(() => {
       setSaveStatus('saving')
       setErrorMsg(null)
       const goals = f.goldenBootGoals === '' ? null : parseInt(f.goldenBootGoals, 10)
-      const result = await saveAwards({
-        goldenBootPlayer: f.goldenBootPlayer,
-        goldenBootGoals: isNaN(goals as number) ? null : goals,
-        goldenBallPlayer: f.goldenBallPlayer,
-        goldenGlovePlayer: f.goldenGlovePlayer,
-        bestYoungPlayer: f.bestYoungPlayer,
+      startTransition(async () => {
+        applyOptimisticFields(f)
+        const result = await saveAwards({
+          goldenBootPlayer: f.goldenBootPlayer,
+          goldenBootGoals: isNaN(goals as number) ? null : goals,
+          goldenBallPlayer: f.goldenBallPlayer,
+          goldenGlovePlayer: f.goldenGlovePlayer,
+          bestYoungPlayer: f.bestYoungPlayer,
+        })
+        if (result.success) {
+          setSaveStatus('saved')
+          setTimeout(() => setSaveStatus('idle'), 2000)
+        } else {
+          setSaveStatus('error')
+          setErrorMsg(result.error)
+        }
       })
-      if (result.success) {
-        setSaveStatus('saved')
-        setTimeout(() => setSaveStatus('idle'), 2000)
-      } else {
-        setSaveStatus('error')
-        setErrorMsg(result.error)
-      }
     }, 1000)
-  }, [])
+  }, [startTransition, applyOptimisticFields])
 
   useEffect(() => {
     // Skip the initial render — don't auto-save on mount

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, useTransition } from 'react'
 import Link from 'next/link'
 import { savePrediction } from '@/app/predictions/actions'
 import { MAX_GOALS_PER_TEAM, timeUntilDeadline } from '@/lib/config'
@@ -87,6 +87,7 @@ export default function GroupStagePredictionForm({
   const [countdown, setCountdown] = useState<Countdown | null>(null)
 
   const timers = useRef(new Map<number, ReturnType<typeof setTimeout>>())
+  const [, startTransition] = useTransition()
 
   // Countdown ticker — client-only to avoid hydration mismatch
   useEffect(() => {
@@ -118,22 +119,24 @@ export default function GroupStagePredictionForm({
 
   // ── Save logic ─────────────────────────────────────────────────────────────
 
-  async function performSave(matchId: number, homeScore: number, awayScore: number) {
+  function performSave(matchId: number, homeScore: number, awayScore: number) {
     setSavingState(prev => new Map(prev).set(matchId, 'saving'))
-    const result = await savePrediction(matchId, homeScore, awayScore)
-    if (result.success) {
-      setSavingState(prev => new Map(prev).set(matchId, 'saved'))
-      setTimeout(() => {
-        setSavingState(prev => {
-          const next = new Map(prev)
-          if (next.get(matchId) === 'saved') next.set(matchId, 'idle')
-          return next
-        })
-      }, 1500)
-    } else {
-      setSavingState(prev => new Map(prev).set(matchId, 'error'))
-      setSaveErrors(prev => new Map(prev).set(matchId, result.error))
-    }
+    startTransition(async () => {
+      const result = await savePrediction(matchId, homeScore, awayScore)
+      if (result.success) {
+        setSavingState(prev => new Map(prev).set(matchId, 'saved'))
+        setTimeout(() => {
+          setSavingState(prev => {
+            const next = new Map(prev)
+            if (next.get(matchId) === 'saved') next.set(matchId, 'idle')
+            return next
+          })
+        }, 1500)
+      } else {
+        setSavingState(prev => new Map(prev).set(matchId, 'error'))
+        setSaveErrors(prev => new Map(prev).set(matchId, result.error))
+      }
+    })
   }
 
   function scheduleAutosave(matchId: number, homeScore: number, awayScore: number) {
@@ -276,12 +279,14 @@ export default function GroupStagePredictionForm({
                   const entry = predictions.get(match.id)
                   const status = savingState.get(match.id) ?? 'idle'
                   const errMsg = saveErrors.get(match.id)
-                  const rowBg = idx % 2 === 0 ? 'bg-bg-card' : 'bg-bg-elevated/60'
+                  const rowBg = status === 'saving'
+                    ? 'bg-accent/5'
+                    : idx % 2 === 0 ? 'bg-bg-card' : 'bg-bg-elevated/60'
 
                   return (
                     <div
                       key={match.id}
-                      className={`${rowBg} px-3 py-2 flex flex-col gap-1`}
+                      className={`${rowBg} px-3 py-2 flex flex-col gap-1 transition-colors`}
                     >
                       {/* Kickoff time */}
                       <MatchTime iso={match.scheduled_at ?? null} className="text-xs text-fg-muted" />

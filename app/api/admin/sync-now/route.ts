@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin'
 import { syncMatchResults } from '@/lib/sync'
+import { revalidateMatches, revalidateLeaderboard } from '@/lib/cache'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,6 +19,8 @@ export async function POST() {
 
   try {
     const result = await syncMatchResults(apiKey)
+    revalidateMatches()
+    revalidateLeaderboard()
     return NextResponse.json(result)
   } catch (err) {
     console.error('[admin] sync error:', err)

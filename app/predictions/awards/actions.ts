@@ -2,6 +2,7 @@
 
 import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
+import { revalidateLeaderboard, revalidatePredictions } from '@/lib/cache'
 import { createClient } from '@/lib/supabase/server'
 import { isPastDeadline } from '@/lib/config'
 
@@ -71,5 +72,7 @@ export async function saveAwards(input: {
 
   revalidatePath('/predictions/awards')
   revalidatePath('/predictions/summary')
+  revalidatePredictions(user.id)
+  revalidateLeaderboard()
   return { success: true }
 }

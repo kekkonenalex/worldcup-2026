@@ -2,6 +2,7 @@
 
 import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
+import { revalidateLeaderboard, revalidatePredictions } from '@/lib/cache'
 import { createClient } from '@/lib/supabase/server'
 import {
   computeGroupStandings,
@@ -182,8 +183,10 @@ export async function saveKnockoutPrediction(
       .in('bracket_position', downstream)
   }
 
-  // 8. Revalidate the page
+  // 8. Revalidate
   revalidatePath('/predictions/knockout')
+  revalidatePredictions(user.id)
+  revalidateLeaderboard()
 
   return { success: true, cleared_downstream: downstream }
 }

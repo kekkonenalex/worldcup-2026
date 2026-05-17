@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useOptimistic } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { TeamBadge } from '@/components/ui/TeamBadge'
-import { STAGE_ORDER, STAGE_LABELS, type ResolvedMatch } from '@/lib/bracket'
+import { STAGE_ORDER, STAGE_LABELS, getDownstreamMatches, type ResolvedMatch } from '@/lib/bracket'
 import { PREDICTION_DEADLINE } from '@/lib/config'
 import type { TeamStanding } from '@/lib/simulation'
 import { saveKnockoutPrediction } from '@/app/predictions/knockout/actions'
@@ -19,7 +19,6 @@ interface Props {
 
 function getMatchesForTab(resolvedMatches: ResolvedMatch[], tab: string): ResolvedMatch[] {
   if (tab === 'final_and_third') {
-    // Show final first, then third-place
     const final = resolvedMatches.filter(m => m.stage === 'final')
     const third = resolvedMatches.filter(m => m.stage === 'third_place')
     return [...final, ...third]
@@ -55,7 +54,6 @@ function TeamButton({ team, isPicked, isSaved, isPending, isLocked, onClick }: T
     )
   }
 
-  const picked = isPicked
   const disabled = isLocked || isPending
 
   return (
@@ -64,17 +62,17 @@ function TeamButton({ team, isPicked, isSaved, isPending, isLocked, onClick }: T
       disabled={disabled}
       className={[
         'flex-1 rounded-lg border px-3 py-3 text-left transition-all',
-        picked
+        isPicked
           ? 'border-accent bg-accent/10 ring-1 ring-accent/30'
           : 'border-border-subtle bg-bg-elevated/40 hover:border-border-strong hover:bg-bg-card-hover',
-        disabled && !picked ? 'opacity-60 cursor-not-allowed' : '',
-        disabled && picked ? 'cursor-default' : '',
+        disabled && !isPicked ? 'opacity-60 cursor-not-allowed' : '',
+        disabled && isPicked ? 'cursor-default' : '',
       ].join(' ')}
     >
       <div className="flex items-center gap-2">
         <TeamBadge name={team.team_name} abbreviation={team.short_code} size="sm" />
         <span className="text-xs text-fg-muted bg-bg-elevated px-1 rounded shrink-0">{team.group_letter}</span>
-        {picked && (
+        {isPicked && (
           <div className="ml-auto shrink-0">
             {isSaved
               ? <span className="text-xs text-accent font-medium">Saved ✓</span>
@@ -92,12 +90,11 @@ interface MatchCardProps {
   match: ResolvedMatch
   isLocked: boolean
   savedMatchNumber: number | null
-  pendingMatchNumber: number | null
+  isPending: boolean
   onPick: (matchNumber: number, teamId: number) => void
 }
 
-function MatchCard({ match, isLocked, savedMatchNumber, pendingMatchNumber, onPick }: MatchCardProps) {
-  const isPending = pendingMatchNumber === match.match_number
+function MatchCard({ match, isLocked, savedMatchNumber, isPending, onPick }: MatchCardProps) {
   const isSavedA = savedMatchNumber === match.match_number && match.user_pick_team_id === match.team_a?.team_id
   const isSavedB = savedMatchNumber === match.match_number && match.user_pick_team_id === match.team_b?.team_id
 
@@ -142,11 +139,11 @@ interface FinalTabProps {
   matches: ResolvedMatch[]
   isLocked: boolean
   savedMatchNumber: number | null
-  pendingMatchNumber: number | null
+  pendingMatches: Set<number>
   onPick: (matchNumber: number, teamId: number) => void
 }
 
-function FinalAndThirdTab({ matches, isLocked, savedMatchNumber, pendingMatchNumber, onPick }: FinalTabProps) {
+function FinalAndThirdTab({ matches, isLocked, savedMatchNumber, pendingMatches, onPick }: FinalTabProps) {
   const finalMatch = matches.find(m => m.stage === 'final')
   const thirdMatch = matches.find(m => m.stage === 'third_place')
 
@@ -163,7 +160,7 @@ function FinalAndThirdTab({ matches, isLocked, savedMatchNumber, pendingMatchNum
             match={finalMatch}
             isLocked={isLocked}
             savedMatchNumber={savedMatchNumber}
-            pendingMatchNumber={pendingMatchNumber}
+            isPending={pendingMatches.has(finalMatch.match_number)}
             onPick={onPick}
           />
         </div>
@@ -181,7 +178,7 @@ function FinalAndThirdTab({ matches, isLocked, savedMatchNumber, pendingMatchNum
             match={thirdMatch}
             isLocked={isLocked}
             savedMatchNumber={savedMatchNumber}
-            pendingMatchNumber={pendingMatchNumber}
+            isPending={pendingMatches.has(thirdMatch.match_number)}
             onPick={onPick}
           />
         </div>
@@ -196,11 +193,23 @@ export default function KnockoutBracket({ resolvedMatches, isLocked }: Props) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<typeof STAGE_ORDER[number]>(STAGE_ORDER[0])
   const [savedMatchNumber, setSavedMatchNumber] = useState<number | null>(null)
-  const [pendingMatchNumber, setPendingMatchNumber] = useState<number | null>(null)
+  const [pendingMatches, setPendingMatches] = useState<Set<number>>(new Set())
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [, startTransition] = useTransition()
 
-  const totalPicks = resolvedMatches.filter(m => m.user_pick_team_id !== null).length
+  const [optimisticMatches, applyOptimisticPick] = useOptimistic(
+    resolvedMatches,
+    (matches, { matchNumber, teamId }: { matchNumber: number; teamId: number }) => {
+      const downstream = new Set(getDownstreamMatches(matchNumber))
+      return matches.map(m => {
+        if (m.match_number === matchNumber) return { ...m, user_pick_team_id: teamId }
+        if (downstream.has(m.match_number)) return { ...m, user_pick_team_id: null }
+        return m
+      })
+    }
+  )
+
+  const totalPicks = optimisticMatches.filter(m => m.user_pick_team_id !== null).length
   const allPicked = totalPicks === 32
 
   const deadlineStr = PREDICTION_DEADLINE.toLocaleDateString('en-GB', {
@@ -208,13 +217,14 @@ export default function KnockoutBracket({ resolvedMatches, isLocked }: Props) {
   })
 
   const handlePick = (matchNumber: number, teamId: number) => {
-    if (pendingMatchNumber !== null || isLocked) return
+    if (isLocked) return
     setErrorMsg(null)
-    setPendingMatchNumber(matchNumber)
 
     startTransition(async () => {
+      applyOptimisticPick({ matchNumber, teamId })
+      setPendingMatches(prev => new Set([...prev, matchNumber]))
       const result = await saveKnockoutPrediction(matchNumber, teamId)
-      setPendingMatchNumber(null)
+      setPendingMatches(prev => { const n = new Set(prev); n.delete(matchNumber); return n })
       if (result.success) {
         setSavedMatchNumber(matchNumber)
         setTimeout(() => setSavedMatchNumber(prev => prev === matchNumber ? null : prev), 1500)
@@ -259,7 +269,7 @@ export default function KnockoutBracket({ resolvedMatches, isLocked }: Props) {
       {/* ── Tabs ── */}
       <div className="flex gap-1 mb-6 overflow-x-auto pb-1 scrollbar-hide">
         {STAGE_ORDER.map(stage => {
-          const tabMatches = getMatchesForTab(resolvedMatches, stage)
+          const tabMatches = getMatchesForTab(optimisticMatches, stage)
           const picked = tabMatches.filter(m => m.user_pick_team_id !== null).length
           const total = stageMatchCount(stage)
           const isActive = activeTab === stage
@@ -292,22 +302,22 @@ export default function KnockoutBracket({ resolvedMatches, isLocked }: Props) {
       {activeTab === 'final_and_third'
         ? (
           <FinalAndThirdTab
-            matches={getMatchesForTab(resolvedMatches, 'final_and_third')}
+            matches={getMatchesForTab(optimisticMatches, 'final_and_third')}
             isLocked={isLocked}
             savedMatchNumber={savedMatchNumber}
-            pendingMatchNumber={pendingMatchNumber}
+            pendingMatches={pendingMatches}
             onPick={handlePick}
           />
         )
         : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {getMatchesForTab(resolvedMatches, activeTab).map(match => (
+            {getMatchesForTab(optimisticMatches, activeTab).map(match => (
               <MatchCard
                 key={match.match_number}
                 match={match}
                 isLocked={isLocked}
                 savedMatchNumber={savedMatchNumber}
-                pendingMatchNumber={pendingMatchNumber}
+                isPending={pendingMatches.has(match.match_number)}
                 onPick={handlePick}
               />
             ))}
