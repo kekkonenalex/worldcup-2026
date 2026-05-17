@@ -128,6 +128,9 @@ export default async function TournamentPage() {
   const winnerMap: Record<number, number | null> = Object.fromEntries(
     knockoutMatches.map(m => [m.match_number, m.winner_team_id])
   )
+  const kickoffMap: Record<number, string | null> = Object.fromEntries(
+    knockoutMatches.map(m => [m.match_number, m.scheduled_at])
+  )
 
   return (
     <div className="pb-16">
@@ -162,6 +165,7 @@ export default async function TournamentPage() {
         <TournamentBracketView
           resolvedMatches={knockoutResolved}
           winnerMap={winnerMap}
+          kickoffMap={kickoffMap}
         />
       </section>
 

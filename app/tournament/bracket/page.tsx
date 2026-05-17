@@ -13,6 +13,7 @@ type RawKnockoutMatch = {
   stage: string
   home_team_id: number | null
   away_team_id: number | null
+  scheduled_at: string | null
   winner_team_id: number | null
   home_team: { id: number; name: string; short_code: string; flag_emoji: string; group_letter: string } | null
   away_team: { id: number; name: string; short_code: string; flag_emoji: string; group_letter: string } | null
@@ -36,7 +37,7 @@ export default async function TournamentBracketPage() {
     .from('matches')
     .select(`
       id, match_number, stage,
-      home_team_id, away_team_id, winner_team_id,
+      home_team_id, away_team_id, scheduled_at, winner_team_id,
       home_team:teams!matches_home_team_id_fkey(id, name, short_code, flag_emoji, group_letter),
       away_team:teams!matches_away_team_id_fkey(id, name, short_code, flag_emoji, group_letter)
     `)
@@ -59,6 +60,9 @@ export default async function TournamentBracketPage() {
   const winnerMap: Record<number, number | null> = Object.fromEntries(
     knockoutMatches.map(m => [m.match_number, m.winner_team_id])
   )
+  const kickoffMap: Record<number, string | null> = Object.fromEntries(
+    knockoutMatches.map(m => [m.match_number, m.scheduled_at])
+  )
 
   return (
     <div className="pb-16">
@@ -74,6 +78,7 @@ export default async function TournamentBracketPage() {
       <TournamentBracketView
         resolvedMatches={resolvedMatches}
         winnerMap={winnerMap}
+        kickoffMap={kickoffMap}
       />
     </div>
   )

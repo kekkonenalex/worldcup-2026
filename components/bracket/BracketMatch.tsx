@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { TeamBadge } from '@/components/ui/TeamBadge'
 import type { ResolvedMatch } from '@/lib/bracket'
 import type { TeamStanding } from '@/lib/simulation'
@@ -11,6 +12,20 @@ export type BracketMatchProps = {
   mode?: 'predict' | 'view'
   onPick?: (teamId: number) => void
   disabled?: boolean
+  kickoffIso?: string | null
+}
+
+function useKickoffLabel(iso: string | null | undefined): string {
+  const [label, setLabel] = useState('')
+  useEffect(() => {
+    if (!iso) return
+    setLabel(
+      new Intl.DateTimeFormat('en-GB', {
+        day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+      }).format(new Date(iso))
+    )
+  }, [iso])
+  return label
 }
 
 const STAGE_LABEL: Record<string, string> = {
@@ -64,6 +79,7 @@ export function BracketMatch({
   mode = 'view',
   onPick,
   disabled = false,
+  kickoffIso,
 }: BracketMatchProps) {
   const effectivePick = pickedWinnerId ?? match.user_pick_team_id
   const hasResult = actualWinnerId != null
@@ -72,14 +88,20 @@ export function BracketMatch({
   const bWins = hasResult && match.team_b?.team_id === actualWinnerId
 
   const canPick = mode === 'predict' && !disabled && !hasResult
+  const kickoffLabel = useKickoffLabel(kickoffIso)
 
   return (
     <div className="w-[200px] rounded-lg border border-border-subtle bg-bg-card overflow-hidden select-none">
-      <div className="px-2.5 py-[3px] border-b border-border-subtle bg-bg-elevated flex items-center justify-between">
-        <span className="text-[10px] font-semibold uppercase tracking-widest text-fg-muted">
-          {STAGE_LABEL[match.stage] ?? match.stage}
-        </span>
-        <span className="text-[10px] text-fg-muted opacity-60">#{match.match_number}</span>
+      <div className="px-2.5 pt-[3px] pb-[3px] border-b border-border-subtle bg-bg-elevated">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-fg-muted">
+            {STAGE_LABEL[match.stage] ?? match.stage}
+          </span>
+          <span className="text-[10px] text-fg-muted opacity-60">#{match.match_number}</span>
+        </div>
+        {kickoffLabel && (
+          <div className="text-[10px] text-fg-muted opacity-70 mt-0.5 tabular-nums">{kickoffLabel}</div>
+        )}
       </div>
       <div className="py-0.5">
         <TeamRow

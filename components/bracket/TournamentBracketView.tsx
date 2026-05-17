@@ -5,15 +5,19 @@ import type { ResolvedMatch } from '@/lib/bracket'
 
 interface Props {
   resolvedMatches: ResolvedMatch[]
-  // Serializable winner map: match_number → winner_team_id (or null if no result yet)
+  // Serializable maps: match_number → value (or null)
   winnerMap: Record<number, number | null>
+  kickoffMap: Record<number, string | null>
 }
 
-export function TournamentBracketView({ resolvedMatches, winnerMap }: Props) {
+export function TournamentBracketView({ resolvedMatches, winnerMap, kickoffMap }: Props) {
   return (
     <BracketView
       resolvedMatches={resolvedMatches}
-      matchProps={(mn) => ({ actualWinnerId: winnerMap[mn] ?? undefined })}
+      matchProps={(mn) => ({
+        actualWinnerId: winnerMap[mn] ?? undefined,
+        kickoffIso: kickoffMap[mn] ?? null,
+      })}
     />
   )
 }
