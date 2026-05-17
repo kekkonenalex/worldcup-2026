@@ -17,7 +17,7 @@ export async function requireAdmin(): Promise<{ user: User; profile: Profile }> 
 
   const profile = (rows as unknown as Profile[] | null)?.[0]
 
-  if (!profile?.is_admin) redirect('/dashboard')
+  if (!profile?.is_admin) redirect('/')
 
   return { user, profile }
 }

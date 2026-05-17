@@ -4,7 +4,7 @@ import { NavLink } from '@/components/ui/NavLink'
 import { MobileMenu } from '@/components/layout/MobileMenu'
 
 const NAV_LINKS = [
-  { href: '/dashboard', label: 'Home' },
+  { href: '/', label: 'Home' },
   { href: '/leaderboard', label: 'Leaderboard' },
   { href: '/leagues', label: 'Leagues' },
   { href: '/predictions', label: 'Predictions' },
@@ -19,7 +19,7 @@ export default async function Navbar() {
       <nav className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
 
         {/* Logo */}
-        <Link href={user ? '/dashboard' : '/'} className="shrink-0">
+        <Link href="/" className="shrink-0">
           <span className="font-display text-accent tracking-wide text-xl md:text-2xl whitespace-nowrap">
             FIFA WORLD CUP 2026
           </span>

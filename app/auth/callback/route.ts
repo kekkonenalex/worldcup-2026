@@ -41,6 +41,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/account/setup?reset=true', request.url))
   }
 
-  // Returning user signing in via link — go straight to dashboard
-  return NextResponse.redirect(new URL('/dashboard', request.url))
+  // Returning user signing in via link — go straight to home
+  return NextResponse.redirect(new URL('/', request.url))
 }

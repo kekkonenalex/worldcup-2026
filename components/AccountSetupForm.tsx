@@ -30,7 +30,7 @@ export default function AccountSetupForm({ isReset, initialDisplayName }: Props)
     const result = await setupAccount({ displayName: isReset ? undefined : displayName.trim(), password, isReset })
     setLoading(false)
     if (result.success) {
-      router.push('/dashboard')
+      router.push('/')
       router.refresh()
     } else {
       setError(result.error ?? 'Something went wrong. Please try again.')

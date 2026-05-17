@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { timeUntilDeadline, isPastDeadline } from '@/lib/config'
 import { Card } from '@/components/ui/Card'
+import { WelcomePopup } from '@/components/welcome/WelcomePopup'
+import type { Profile } from '@/types/database'
 
 const STEPS = [
   { n: '1', title: 'Sign in', body: 'No password needed on first visit — just your email. A sign-in link arrives instantly.' },
@@ -20,6 +22,19 @@ export default async function Home() {
   const { data: { user } } = await supabase.auth.getUser()
   const locked = isPastDeadline()
   const countdown = timeUntilDeadline()
+
+  let isAdmin = false
+  let welcomeShown = true
+  if (user) {
+    const { data: profileRow } = await supabase
+      .from('profiles')
+      .select('is_admin, welcome_shown')
+      .eq('id', user.id)
+      .single()
+    const profile = profileRow as Pick<Profile, 'is_admin' | 'welcome_shown'> | null
+    isAdmin = !!profile?.is_admin
+    welcomeShown = !!profile?.welcome_shown
+  }
 
   return (
     <div className="pb-16">
@@ -85,6 +100,18 @@ export default async function Home() {
         </section>
       )}
 
+      {/* ── Admin ── */}
+      {user && isAdmin && (
+        <div className="max-w-3xl mx-auto mb-8">
+          <Link
+            href="/admin"
+            className="block w-full text-center rounded-xl px-4 py-3.5 font-semibold text-sm uppercase tracking-wider transition-colors bg-amber-700 hover:bg-amber-600 text-white"
+          >
+            Admin: Manage Match Results →
+          </Link>
+        </div>
+      )}
+
       {/* ── How it works ── */}
       {!user && (
         <section className="max-w-3xl mx-auto">
@@ -104,6 +131,7 @@ export default async function Home() {
           </div>
         </section>
       )}
+      {user && <WelcomePopup initiallyShown={!welcomeShown} />}
     </div>
   )
 }

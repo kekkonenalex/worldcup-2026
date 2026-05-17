@@ -23,7 +23,7 @@ export default async function LeaderboardPage() {
   return (
     <div className="pb-16">
       <div className="mb-8">
-        <Link href="/dashboard" className="text-xs font-semibold uppercase tracking-wider text-fg-muted hover:text-fg-primary transition-colors">
+        <Link href="/" className="text-xs font-semibold uppercase tracking-wider text-fg-muted hover:text-fg-primary transition-colors">
           ← Home
         </Link>
         <h1 className="text-5xl font-display tracking-wide uppercase text-fg-primary mt-3 mb-2">

@@ -406,7 +406,7 @@ export default function PredictionsSummary({
               Complete Awards →
             </Link>
           )}
-          <Link href="/dashboard" className="rounded-lg border border-dashed border-border-dashed text-fg-muted hover:text-fg-primary px-4 py-2 text-sm font-semibold uppercase tracking-wider transition-colors">
+          <Link href="/" className="rounded-lg border border-dashed border-border-dashed text-fg-muted hover:text-fg-primary px-4 py-2 text-sm font-semibold uppercase tracking-wider transition-colors">
             ← Home
           </Link>
         </div>

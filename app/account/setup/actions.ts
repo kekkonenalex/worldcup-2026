@@ -44,6 +44,6 @@ export async function setupAccount(input: {
     return { success: false, error: profileError.message }
   }
 
-  revalidatePath('/dashboard')
+  revalidatePath('/')
   return { success: true }
 }

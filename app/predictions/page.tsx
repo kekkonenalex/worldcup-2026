@@ -22,7 +22,7 @@ export default async function PredictionsPage() {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-fg-primary mb-2">Could not load matches</h1>
           <p className="text-fg-muted mb-6">{matchError?.message ?? 'No group stage matches found.'}</p>
-          <Link href="/dashboard" className="text-accent hover:underline text-sm">← Home</Link>
+          <Link href="/" className="text-accent hover:underline text-sm">← Home</Link>
         </div>
       </div>
     )
@@ -42,7 +42,7 @@ export default async function PredictionsPage() {
   return (
     <div className="pb-16">
       <div className="mb-6">
-        <Link href="/dashboard" className="text-xs font-semibold uppercase tracking-wider text-fg-muted hover:text-fg-primary transition-colors">
+        <Link href="/" className="text-xs font-semibold uppercase tracking-wider text-fg-muted hover:text-fg-primary transition-colors">
           ← Home
         </Link>
         <h1 className="text-4xl font-display tracking-wide uppercase text-fg-primary mt-3 mb-1">Group Stage</h1>

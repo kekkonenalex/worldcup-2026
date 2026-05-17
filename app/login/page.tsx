@@ -37,7 +37,7 @@ export default function LoginPage() {
     if (error) {
       setMainError('Incorrect email or password. Try again or request a sign-in link below.')
     } else {
-      router.push('/dashboard')
+      router.push('/')
       router.refresh()
     }
   }

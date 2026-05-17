@@ -9,7 +9,7 @@ interface MobileMenuProps {
 }
 
 const NAV_LINKS = [
-  { href: '/dashboard', label: 'Home' },
+  { href: '/', label: 'Home' },
   { href: '/leaderboard', label: 'Leaderboard' },
   { href: '/leagues', label: 'Leagues' },
   { href: '/predictions', label: 'Predictions' },
