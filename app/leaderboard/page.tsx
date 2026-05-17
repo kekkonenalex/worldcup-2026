@@ -8,6 +8,8 @@ import type { UserScoreBreakdown } from '@/lib/scoring'
 
 export const dynamic = 'force-dynamic'
 
+const TOP_N = 10
+
 export default async function LeaderboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -19,6 +21,21 @@ export default async function LeaderboardPage() {
   const subtitle = !locked
     ? 'Predictions still open — scores calculated after each matchday'
     : 'Scores calculated after each matchday'
+
+  const top = scores.slice(0, TOP_N)
+  const myIndex = scores.findIndex(s => s.userId === user.id)
+  const myEntry = myIndex >= TOP_N ? scores[myIndex] : null
+
+  function rowProps(s: typeof scores[number]) {
+    return {
+      rank: s.rank,
+      isCurrentUser: s.userId === user!.id,
+      displayName: s.displayName,
+      avatarInitials: (s.displayName[0] ?? '?').toUpperCase(),
+      points: (s.breakdown as UserScoreBreakdown).total,
+      action: { label: s.userId === user!.id ? 'Edit Picks' : 'View Picks', href: `/users/${s.userId}` },
+    }
+  }
 
   return (
     <div className="pb-16">
@@ -36,17 +53,22 @@ export default async function LeaderboardPage() {
         {scores.length === 0 ? (
           <p className="text-fg-muted text-sm text-center py-8">No participants yet.</p>
         ) : (
-          scores.map(s => (
-            <LeaderboardRow
-              key={s.userId}
-              rank={s.rank}
-              isCurrentUser={s.userId === user.id}
-              displayName={s.displayName}
-              avatarInitials={(s.displayName[0] ?? '?').toUpperCase()}
-              points={(s.breakdown as UserScoreBreakdown).total}
-              action={{ label: s.userId === user.id ? 'Edit Picks' : 'View Picks', href: `/users/${s.userId}` }}
-            />
-          ))
+          <>
+            {top.map(s => (
+              <LeaderboardRow key={s.userId} {...rowProps(s)} />
+            ))}
+
+            {myEntry && (
+              <>
+                <div className="flex items-center gap-3 py-2">
+                  <div className="flex-1 h-px bg-border-subtle" />
+                  <span className="text-xs text-fg-muted tracking-wider">Your placement</span>
+                  <div className="flex-1 h-px bg-border-subtle" />
+                </div>
+                <LeaderboardRow key={myEntry.userId} {...rowProps(myEntry)} />
+              </>
+            )}
+          </>
         )}
       </div>
     </div>
