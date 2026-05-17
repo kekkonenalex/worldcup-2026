@@ -36,6 +36,18 @@ export function normalizeTeamNameNFD(name: string): string {
   return normalizeTeamName(decomposed)
 }
 
+// Returns true only if the API date should overwrite the stored one.
+// We never let football-data.org clobber a known kickoff with a placeholder:
+// their knockout dates are TBD until the group stage ends and arrive as rough
+// estimates. We only accept the API value if the DB is empty or the delta is
+// more than 24 hours (a genuine reschedule).
+function shouldUpdateScheduledAt(dbValue: string | null, apiValue: string | null): boolean {
+  if (!apiValue) return false
+  if (!dbValue) return true
+  const diffMs = Math.abs(new Date(apiValue).getTime() - new Date(dbValue).getTime())
+  return diffMs > 24 * 60 * 60 * 1000
+}
+
 function fdStatusToInternal(status: string): MatchStatus {
   if (status === 'FINISHED' || status === 'AWARDED') return 'finished'
   if (status === 'IN_PLAY' || status === 'PAUSED') return 'live'
@@ -341,15 +353,16 @@ export async function syncMatchResults(apiKey: string): Promise<SyncResult> {
         else if (fd.score.winner === 'AWAY_TEAM') winnerTeamId = m.away_team_id
 
         const patch: Record<string, unknown> = { status: newStatus, home_score: newHome, away_score: newAway, winner_team_id: winnerTeamId }
-        if (fd.utcDate !== null) patch.scheduled_at = fd.utcDate
+        if (shouldUpdateScheduledAt(m.scheduled_at, fd.utcDate)) patch.scheduled_at = fd.utcDate
         const { error } = await supabase.from('matches').update(patch as never).eq('id', m.id)
         if (error) errors.push(`knockout match ${m.id}: ${error.message}`)
         else knockoutUpdated++
       } else {
         // Set status to reflect API state (scores already null from step 1)
-        if (m.status !== newStatus || (fd.utcDate !== null && m.scheduled_at !== fd.utcDate)) {
+        const kickoffChanged = shouldUpdateScheduledAt(m.scheduled_at, fd.utcDate)
+        if (m.status !== newStatus || kickoffChanged) {
           const patch: Record<string, unknown> = { status: newStatus }
-          if (fd.utcDate !== null) patch.scheduled_at = fd.utcDate
+          if (kickoffChanged) patch.scheduled_at = fd.utcDate
           await supabase.from('matches').update(patch as never).eq('id', m.id)
         }
       }
