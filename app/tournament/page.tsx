@@ -10,7 +10,7 @@ import { BRACKET_STRUCTURE, type ResolvedMatch } from '@/lib/bracket'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { GroupStandingsTable } from '@/components/ui/GroupStandingsTable'
 import { Card } from '@/components/ui/Card'
-import { BracketView } from '@/components/bracket/BracketView'
+import { TournamentBracketView } from '@/components/bracket/TournamentBracketView'
 import type { TeamStanding } from '@/lib/simulation'
 
 export const dynamic = 'force-dynamic'
@@ -125,7 +125,9 @@ export default async function TournamentPage() {
     user_pick_team_id: null,
   }))
 
-  const actualWinnerMap = new Map(knockoutMatches.map(m => [m.match_number, m.winner_team_id]))
+  const winnerMap: Record<number, number | null> = Object.fromEntries(
+    knockoutMatches.map(m => [m.match_number, m.winner_team_id])
+  )
 
   return (
     <div className="pb-16">
@@ -157,11 +159,9 @@ export default async function TournamentPage() {
       {/* ── Knockout Phase ── */}
       <section className="mb-12">
         <SectionHeading>Knockout Phase</SectionHeading>
-        <BracketView
+        <TournamentBracketView
           resolvedMatches={knockoutResolved}
-          matchProps={(mn) => ({
-            actualWinnerId: actualWinnerMap.get(mn) ?? undefined,
-          })}
+          winnerMap={winnerMap}
         />
       </section>
 

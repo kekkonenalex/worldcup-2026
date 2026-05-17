@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { BRACKET_STRUCTURE, type ResolvedMatch } from '@/lib/bracket'
-import { BracketView } from '@/components/bracket/BracketView'
+import { TournamentBracketView } from '@/components/bracket/TournamentBracketView'
 import type { TeamStanding } from '@/lib/simulation'
 
 export const dynamic = 'force-dynamic'
@@ -56,7 +56,9 @@ export default async function TournamentBracketPage() {
     user_pick_team_id: null,
   }))
 
-  const actualWinnerMap = new Map(knockoutMatches.map(m => [m.match_number, m.winner_team_id]))
+  const winnerMap: Record<number, number | null> = Object.fromEntries(
+    knockoutMatches.map(m => [m.match_number, m.winner_team_id])
+  )
 
   return (
     <div className="pb-16">
@@ -69,11 +71,9 @@ export default async function TournamentBracketPage() {
       <h1 className="text-4xl font-display tracking-wide uppercase text-fg-primary mt-3 mb-6">
         Full Bracket
       </h1>
-      <BracketView
+      <TournamentBracketView
         resolvedMatches={resolvedMatches}
-        matchProps={(mn) => ({
-          actualWinnerId: actualWinnerMap.get(mn) ?? undefined,
-        })}
+        winnerMap={winnerMap}
       />
     </div>
   )
