@@ -16,6 +16,7 @@ import {
 import { resolveBracket, type BracketContext, type ResolvedMatch } from '@/lib/bracket'
 import PredictionsSummary from '@/components/PredictionsSummary'
 import SignOutButton from '@/components/SignOutButton'
+import ChangePasswordForm from '@/components/ChangePasswordForm'
 import { Card } from '@/components/ui/Card'
 import { TeamBadge } from '@/components/ui/TeamBadge'
 import type { MatchWithTeams, GroupPrediction, KnockoutPrediction, AwardPrediction, Profile } from '@/types/database'
@@ -269,6 +270,17 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
           </p>
           <Link href="/leagues" className="text-sm text-accent hover:underline">Browse leagues →</Link>
         </Card>
+      )}
+
+      {isSelf && (
+        <div className="mt-8">
+          <h2 className="text-2xl font-display tracking-wider uppercase text-fg-primary mb-3">
+            Change Password
+          </h2>
+          <Card>
+            <ChangePasswordForm />
+          </Card>
+        </div>
       )}
 
       {isSelf && (
