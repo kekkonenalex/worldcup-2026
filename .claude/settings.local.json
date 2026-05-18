@@ -38,7 +38,10 @@
       "Bash(curl -s http://localhost:3000/bracket-demo)",
       "Bash(curl *)",
       "Bash(python3 -c ' *)",
-      "WebFetch(domain:en.wikipedia.org)"
+      "WebFetch(domain:en.wikipedia.org)",
+      "PowerShell(Get-ChildItem -Path app -Recurse | Where-Object { $_.Name -match \"^\\(page|layout|loading\\)\\\\.tsx$\" } | Select-Object FullName | Sort-Object FullName)",
+      "PowerShell(Get-Content *)",
+      "PowerShell(npx tsc --noEmit 2>&1)"
     ]
   }
 }
