@@ -6,6 +6,7 @@ import { ProfileButton } from '@/components/layout/ProfileButton'
 
 const NAV_LINKS = [
   { href: '/', label: 'Home' },
+  { href: '/tournament', label: 'Tournament Hub' },
   { href: '/leaderboard', label: 'Leaderboard' },
   { href: '/leagues', label: 'Leagues' },
   { href: '/predictions', label: 'Predictions' },

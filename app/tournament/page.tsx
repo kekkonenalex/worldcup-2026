@@ -8,6 +8,7 @@ import {
 } from '@/lib/simulation'
 import { BRACKET_STRUCTURE, type ResolvedMatch } from '@/lib/bracket'
 import { SectionHeading } from '@/components/ui/SectionHeading'
+import { UpcomingMatches } from '@/components/UpcomingMatches'
 import { GroupStandingsTable } from '@/components/ui/GroupStandingsTable'
 import { Card } from '@/components/ui/Card'
 import { TournamentBracketView } from '@/components/bracket/TournamentBracketView'
@@ -143,6 +144,8 @@ export default async function TournamentPage() {
           Live standings, knockout results, and award races — all in one place.
         </p>
       </div>
+
+      <UpcomingMatches />
 
       {/* ── Group Stage ── */}
       <section className="mb-12">
