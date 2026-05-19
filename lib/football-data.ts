@@ -1,5 +1,36 @@
 // Pure API client for football-data.org. No Supabase imports.
 
+export interface FdPlayer {
+  id: number
+  name: string
+  nationality: string
+  position: string | null
+}
+
+export interface FdScorer {
+  player: FdPlayer
+  team: { id: number; name: string; shortName: string }
+  goals: number
+  assists: number | null
+  playedMatches: number
+  penalties: number | null
+}
+
+export async function fetchWorldCupScorers(apiKey: string, limit = 10): Promise<FdScorer[]> {
+  const res = await fetch(
+    `https://api.football-data.org/v4/competitions/WC/scorers?limit=${limit}`,
+    {
+      headers: { 'X-Auth-Token': apiKey },
+      next: { revalidate: 0 },
+    }
+  )
+  if (!res.ok) {
+    throw new Error(`football-data.org returned ${res.status}: ${await res.text()}`)
+  }
+  const body = (await res.json()) as { scorers: FdScorer[] }
+  return body.scorers ?? []
+}
+
 export interface FdTeam {
   id: number
   name: string

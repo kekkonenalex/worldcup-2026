@@ -6,7 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "sim:reset": "tsx scripts/simulation/reset.ts",
+    "sim:seed": "tsx scripts/simulation/seed-mini-tournament.ts",
+    "sim:sync-test": "tsx scripts/simulation/smoke-test-sync.ts",
+    "sim:sync-test:cl": "tsx scripts/simulation/smoke-test-sync.ts CL",
+    "sim:score-test": "tsx scripts/simulation/run-scoring-test.ts",
+    "sim:full": "npm run sim:reset && npm run sim:seed && npm run sim:score-test",
+    "sim:scorers-test": "tsx scripts/simulation/smoke-test-scorers.ts",
+    "sim:scorers-test:cl": "tsx scripts/simulation/smoke-test-scorers.ts CL"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",
@@ -18,12 +26,14 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^20.19.41",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "tailwindcss": "^4",
+    "tsx": "^4.22.3",
     "typescript": "^5"
   }
 }

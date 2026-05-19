@@ -41,7 +41,12 @@
       "WebFetch(domain:en.wikipedia.org)",
       "PowerShell(Get-ChildItem -Path app -Recurse | Where-Object { $_.Name -match \"^\\(page|layout|loading\\)\\\\.tsx$\" } | Select-Object FullName | Sort-Object FullName)",
       "PowerShell(Get-Content *)",
-      "PowerShell(npx tsc --noEmit 2>&1)"
+      "PowerShell(npx tsc --noEmit 2>&1)",
+      "PowerShell(Get-ChildItem -Path . -Recurse -Directory | Where-Object { $_.Name -eq \"migrations\" } | Select-Object FullName)",
+      "PowerShell(Get-ChildItem -Path . -Recurse | Where-Object { $_.Extension -eq \".sql\" } | Select-Object FullName | Sort-Object FullName)",
+      "PowerShell(Get-ChildItem -Path . -Depth 2 -Directory | Select-Object Name, FullName | Sort-Object Name | Where-Object { $_.Name -notmatch \"^\\\\.next$|^node_modules$\" })",
+      "PowerShell(npm install *)",
+      "PowerShell(npm run *)"
     ]
   }
 }

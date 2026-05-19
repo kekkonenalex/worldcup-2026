@@ -12,6 +12,7 @@ import { UpcomingMatches } from '@/components/UpcomingMatches'
 import { GroupStandingsTable } from '@/components/ui/GroupStandingsTable'
 import { Card } from '@/components/ui/Card'
 import { TournamentBracketView } from '@/components/bracket/TournamentBracketView'
+import { TopScorers } from '@/components/TopScorers'
 import type { TeamStanding } from '@/lib/simulation'
 
 export const dynamic = 'force-dynamic'
@@ -176,18 +177,16 @@ export default async function TournamentPage() {
       <section className="mb-12">
         <SectionHeading>Golden Boot</SectionHeading>
         <Card>
-          <div className="flex items-start gap-4">
-            <img src="/images/golden-boot.webp" alt="Golden Boot" className="w-20 h-20 object-contain shrink-0" />
+          <div className="flex items-start gap-4 mb-4">
+            <img src="/images/golden-boot.webp" alt="Golden Boot" className="w-14 h-14 object-contain shrink-0" />
             <div>
-              <h3 className="font-display text-accent tracking-wider text-lg mb-1">GOLDEN BOOT</h3>
-              <p className="text-fg-secondary text-sm mb-3">
+              <h3 className="font-display text-accent tracking-wider text-lg mb-1">TOP SCORERS</h3>
+              <p className="text-fg-secondary text-sm">
                 The race for the tournament&apos;s top goalscorer.
-              </p>
-              <p className="text-xs text-fg-muted bg-bg-elevated rounded px-3 py-2 font-mono">
-                Top scorers will appear here
               </p>
             </div>
           </div>
+          <TopScorers />
         </Card>
       </section>
     </div>

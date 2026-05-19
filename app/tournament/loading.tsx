@@ -42,6 +42,38 @@ export default function TournamentLoading() {
           </div>
         ))}
       </div>
+      {/* Golden Boot heading */}
+      <div className="h-5 w-36 bg-bg-card rounded mb-4" />
+
+      {/* Golden Boot card */}
+      <div className="rounded-card border border-border-subtle bg-bg-card p-4 mb-12">
+        <div className="flex items-start gap-4 mb-4">
+          <div className="w-14 h-14 bg-bg-elevated rounded shrink-0" />
+          <div className="flex-1">
+            <div className="h-4 w-28 bg-bg-elevated rounded mb-2" />
+            <div className="h-3 w-56 bg-bg-elevated rounded" />
+          </div>
+        </div>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-3 py-3 border-t border-border-subtle first:border-t-0">
+            <div className="w-6 h-5 bg-bg-elevated rounded shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="h-4 w-36 bg-bg-elevated rounded mb-1" />
+              <div className="h-3 w-20 bg-bg-elevated rounded" />
+            </div>
+            <div className="flex gap-4 shrink-0">
+              <div className="text-center">
+                <div className="h-4 w-6 bg-bg-elevated rounded mb-1 mx-auto" />
+                <div className="h-3 w-8 bg-bg-elevated rounded" />
+              </div>
+              <div className="text-center">
+                <div className="h-4 w-6 bg-bg-elevated rounded mb-1 mx-auto" />
+                <div className="h-3 w-10 bg-bg-elevated rounded" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
