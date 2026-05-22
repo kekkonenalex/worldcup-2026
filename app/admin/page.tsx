@@ -1,6 +1,7 @@
 import { requireAdmin } from '@/lib/admin'
 import { createClient } from '@/lib/supabase/server'
 import AdminMatchResults from '@/components/AdminMatchResults'
+import AdminReminderTrigger from '@/components/AdminReminderTrigger'
 import type { Match, Team } from '@/types/database'
 
 export type AdminMatch = Match & {
@@ -50,6 +51,7 @@ export default async function AdminPage() {
       </div>
 
       <AdminMatchResults matches={matches} teams={teams} hasSomeExternalIds={hasSomeExternalIds} />
+      <AdminReminderTrigger />
     </div>
   )
 }

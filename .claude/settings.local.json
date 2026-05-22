@@ -46,7 +46,13 @@
       "PowerShell(Get-ChildItem -Path . -Recurse | Where-Object { $_.Extension -eq \".sql\" } | Select-Object FullName | Sort-Object FullName)",
       "PowerShell(Get-ChildItem -Path . -Depth 2 -Directory | Select-Object Name, FullName | Sort-Object Name | Where-Object { $_.Name -notmatch \"^\\\\.next$|^node_modules$\" })",
       "PowerShell(npm install *)",
-      "PowerShell(npm run *)"
+      "PowerShell(npm run *)",
+      "Bash(Get-Content .env.local)",
+      "Bash(Select-String \"RESEND\")",
+      "PowerShell(cd \"C:\\\\Users\\\\alexk\\\\OneDrive - Hanken Svenska handelshogskolan\\\\worldcup-2026\"; Get-ChildItem app -Recurse -Filter \"page.tsx\" | Where-Object { $_.FullName -match \"predictions\" } | Select-Object FullName)",
+      "PowerShell(cd \"C:\\\\Users\\\\alexk\\\\OneDrive - Hanken Svenska handelshogskolan\\\\worldcup-2026\"; Get-ChildItem app -Recurse -Filter \"page.tsx\" | Where-Object { $_.FullName -match \"predictions\" } | Select-Object FullName; Write-Host \"---\"; Get-Content vercel.json -ErrorAction SilentlyContinue; Write-Host \"END\")",
+      "PowerShell(cd \"C:\\\\Users\\\\alexk\\\\OneDrive - Hanken Svenska handelshogskolan\\\\worldcup-2026\"; [System.Web.Security.Membership]::GeneratePassword\\(32, 0\\))",
+      "PowerShell(-join \\(\\(65..90\\) + \\(97..122\\) + \\(48..57\\) | Get-Random -Count 32 | ForEach-Object { [char]$_ }\\))"
     ]
   }
 }

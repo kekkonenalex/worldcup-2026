@@ -16,7 +16,6 @@ import {
 import { resolveBracket, type BracketContext, type ResolvedMatch } from '@/lib/bracket'
 import PredictionsSummary from '@/components/PredictionsSummary'
 import SignOutButton from '@/components/SignOutButton'
-import ChangePasswordForm from '@/components/ChangePasswordForm'
 import { Card } from '@/components/ui/Card'
 import { TeamBadge } from '@/components/ui/TeamBadge'
 import type { MatchWithTeams, GroupPrediction, KnockoutPrediction, AwardPrediction, Profile } from '@/types/database'
@@ -273,18 +272,13 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
       )}
 
       {isSelf && (
-        <div className="mt-8">
-          <h2 className="text-2xl font-display tracking-wider uppercase text-fg-primary mb-3">
-            Change Password
-          </h2>
-          <Card>
-            <ChangePasswordForm />
-          </Card>
-        </div>
-      )}
-
-      {isSelf && (
-        <div className="flex justify-center mt-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mt-8">
+          <Link
+            href="/profile/edit"
+            className="inline-flex items-center justify-center px-5 py-2.5 bg-accent text-accent-fg font-semibold uppercase tracking-wider rounded-lg text-sm hover:bg-accent-hover transition-colors"
+          >
+            Edit Profile
+          </Link>
           <SignOutButton />
         </div>
       )}

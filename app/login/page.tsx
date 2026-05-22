@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [mainLoading, setMainLoading] = useState(false)
   const [mainError, setMainError] = useState<string | null>(null)
+  const [accountDeleted, setAccountDeleted] = useState(false)
 
   const linkEmailRef = useRef<HTMLInputElement>(null)
   const [linkEmail, setLinkEmail] = useState('')
@@ -19,6 +20,9 @@ export default function LoginPage() {
   const [linkSent, setLinkSent] = useState(false)
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('deleted') === '1') setAccountDeleted(true)
+
     const hash = window.location.hash
     if (hash.includes('error_code=otp_expired')) {
       setMainError('This magic link has expired. Please request a new one below.')
@@ -63,6 +67,21 @@ export default function LoginPage() {
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
+
+        {/* Account deleted banner */}
+        {accountDeleted && (
+          <div className="mb-6 rounded-lg bg-green-900/30 border border-green-700/50 px-4 py-3 flex items-center justify-between gap-3">
+            <p className="text-green-300 text-sm font-medium">Your account has been deleted.</p>
+            <button
+              onClick={() => setAccountDeleted(false)}
+              className="text-green-500 hover:text-green-300 text-lg leading-none"
+              aria-label="Dismiss"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
         {/* Logo */}
         <div className="text-center mb-8">
           <p className="font-display text-accent tracking-wide text-2xl mb-1">
