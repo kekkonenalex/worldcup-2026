@@ -136,13 +136,15 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
   const countdown = timeUntilDeadline()
   const deadlineFormatted = PREDICTION_DEADLINE.toLocaleString('en-GB', { timeZone: 'Europe/Helsinki', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 
-  // Find predicted champion from knockoutResolvedMatches (match 104 = final)
+  // Champion/runner-up derive from the user's bracket pick for match 104 (the final),
+  // not from slot order. team_a was previously used as champion regardless of the pick.
   const finalMatch = knockoutResolvedMatches.find(m => m.match_number === 104)
-  const predictedChampion = finalMatch?.team_a ?? finalMatch?.team_b
-
-  // Find predicted runner-up
-  const predictedRunnerUp = finalMatch
-    ? (finalMatch.team_a?.team_id !== predictedChampion?.team_id ? finalMatch.team_a : finalMatch.team_b)
+  const pickedId = finalMatch?.user_pick_team_id ?? null
+  const predictedChampion = pickedId !== null
+    ? (finalMatch?.team_a?.team_id === pickedId ? finalMatch.team_a : finalMatch?.team_b?.team_id === pickedId ? finalMatch.team_b : null)
+    : null
+  const predictedRunnerUp = pickedId !== null && finalMatch
+    ? (finalMatch.team_a?.team_id === pickedId ? finalMatch.team_b : finalMatch.team_a)
     : null
 
   return (
