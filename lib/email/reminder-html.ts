@@ -1,7 +1,8 @@
 interface ReminderEmailParams {
   displayName: string
   missingSections: string[]
-  deadlineLocal: string
+  deadline: Date
+  now: Date
   siteUrl: string
 }
 
@@ -11,11 +12,50 @@ const SECTION_CONFIG: Record<string, { label: string; path: string }> = {
   awards:   { label: 'Awards Predictions',       path: '/predictions/awards' },
 }
 
+function plural(n: number, unit: string): string {
+  return `${n} ${unit}${n === 1 ? '' : 's'}`
+}
+
 export function buildReminderEmail(params: ReminderEmailParams): { subject: string; html: string } {
-  const { displayName, missingSections, deadlineLocal, siteUrl } = params
+  const { displayName, missingSections, deadline, now, siteUrl } = params
   const count = missingSections.length
 
-  const subject = '⏰ Your World Cup 2026 predictions — 36 hours left'
+  // ── Dynamic countdown, computed from the deadline + send time ────────────────
+  const msRemaining  = deadline.getTime() - now.getTime()
+  const totalMinutes = Math.max(0, Math.floor(msRemaining / 60000))
+  const days    = Math.floor(totalMinutes / (60 * 24))
+  const hours   = Math.floor((totalMinutes % (60 * 24)) / 60)
+  const minutes = totalMinutes % 60
+
+  let countdownString: string
+  if (days >= 1) {
+    countdownString = `${plural(days, 'day')}, ${plural(hours, 'hour')} left`
+  } else if (hours >= 1) {
+    countdownString = `${plural(hours, 'hour')}, ${plural(minutes, 'minute')} left`
+  } else {
+    countdownString = `${plural(minutes, 'minute')} left`
+  }
+
+  // ── Deadline display string in Helsinki time ─────────────────────────────────
+  const deadlineLocal = new Intl.DateTimeFormat('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Europe/Helsinki',
+  }).format(deadline) + ' (Helsinki time)'
+
+  // ── Dynamic subject line ─────────────────────────────────────────────────────
+  let subject: string
+  if (totalMinutes <= 60) {
+    subject = `Last call — ${minutes} minutes to lock in your World Cup predictions`
+  } else if (days < 1) {
+    subject = `${hours} hours left — your World Cup predictions`
+  } else {
+    subject = `${plural(days, 'day')} left — your World Cup predictions`
+  }
 
   const sectionsHtml = missingSections.map(section => {
     const cfg = SECTION_CONFIG[section] ?? { label: section, path: '/predictions' }
@@ -70,7 +110,8 @@ export function buildReminderEmail(params: ReminderEmailParams): { subject: stri
               <p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.7;">
                 The prediction deadline closes on
                 <strong>${deadlineLocal}</strong>.
-                You have <strong>${count} section${count !== 1 ? 's' : ''}</strong> still to complete:
+                You have <strong>${countdownString}</strong> to complete the following
+                section${count !== 1 ? 's' : ''}:
               </p>
 
               <!-- Missing sections -->

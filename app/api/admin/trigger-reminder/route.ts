@@ -25,7 +25,9 @@ export async function POST() {
     return NextResponse.json({ error: 'CRON_SECRET not configured' }, { status: 500 })
   }
 
-  const res = await fetch(`${siteUrl}/api/cron/send-reminder`, {
+  // force=1 bypasses the June-9 send window guard so admin-initiated sends always
+  // fire (still subject to the past-deadline guard inside the cron route).
+  const res = await fetch(`${siteUrl}/api/cron/send-reminder?force=1`, {
     headers: { Authorization: `Bearer ${secret}` },
   })
 

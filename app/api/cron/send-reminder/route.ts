@@ -2,14 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
 import { buildReminderEmail } from '@/lib/email/reminder-html'
+import { PREDICTION_DEADLINE } from '@/lib/config'
 
 // Only sends within a 6-hour window around the intended 09:00 UTC fire time on June 9, 2026.
 // Outside this window the route returns { skipped: true } — safe to leave the cron entry
 // in vercel.json after June 2026; it will be a no-op in future years.
+// The window guard is bypassed when ?force=1 is passed (admin-initiated sends).
 const WINDOW_START = new Date('2026-06-09T07:00:00Z')
 const WINDOW_END   = new Date('2026-06-09T13:00:00Z')
 
-const DEADLINE_LOCAL = 'Tuesday, 10 June 2026 at 23:59 (Helsinki time / UTC+3)'
 const SITE_URL = 'https://www.wc2026-predictions.site'
 
 // Group complete = 72 predictions (72 group-stage matches in 48-team WC)
@@ -27,18 +28,35 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // ── B. Date guard ───────────────────────────────────────────────────────────
-  const now = new Date()
-  if (now < WINDOW_START || now > WINDOW_END) {
+  // ── B. Force flag ───────────────────────────────────────────────────────────
+  const url = new URL(request.url)
+  const force = url.searchParams.get('force') === '1'
+
+  const now      = new Date()
+  const deadline = new Date(PREDICTION_DEADLINE)
+
+  // ── C. Date guard (bypassed by ?force=1, so Vercel's scheduled cron is still protected) ─
+  if (!force) {
+    if (now < WINDOW_START || now > WINDOW_END) {
+      return NextResponse.json({
+        skipped: true,
+        reason: 'Outside send window',
+        now: now.toISOString(),
+        window: { start: WINDOW_START.toISOString(), end: WINDOW_END.toISOString() },
+      })
+    }
+  }
+
+  // ── D. Past-deadline guard (cannot be bypassed by force) ─────────────────────
+  if (now > deadline) {
     return NextResponse.json({
       skipped: true,
-      reason: 'Outside send window',
-      now: now.toISOString(),
-      window: { start: WINDOW_START.toISOString(), end: WINDOW_END.toISOString() },
+      reason: 'Deadline has already passed',
+      deadline: deadline.toISOString(),
     })
   }
 
-  // ── C–E. Main logic ─────────────────────────────────────────────────────────
+  // ── E. Main logic ───────────────────────────────────────────────────────────
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const serviceKey  = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -151,7 +169,8 @@ export async function GET(request: NextRequest) {
         const { subject, html } = buildReminderEmail({
           displayName: u.displayName,
           missingSections: u.missingSections,
-          deadlineLocal: DEADLINE_LOCAL,
+          deadline,
+          now,
           siteUrl: SITE_URL,
         })
 
