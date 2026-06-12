@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { timeUntilDeadline, isPastDeadline } from '@/lib/config'
 import { Card } from '@/components/ui/Card'
 import { WelcomePopup } from '@/components/welcome/WelcomePopup'
 import type { Profile } from '@/types/database'
@@ -15,13 +14,12 @@ const CARDS = [
   { label: 'My Profile', icon: '🔐', desc: 'Your personal prediction history and score breakdown.', href: '/users/[me]' },
   { label: 'My Leagues', icon: '🏅', desc: 'Compete in private leagues with friends and colleagues.', href: '/leagues' },
   { label: 'Tournament Hub', icon: '🏆', desc: 'Live standings, bracket, golden boot, and more.', href: '/tournament' },
+  { label: 'View Leaderboard', icon: '📊', desc: 'See the global standings and where you rank.', href: '/leaderboard' },
 ]
 
 export default async function Home() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const locked = isPastDeadline()
-  const countdown = timeUntilDeadline()
 
   let isAdmin = false
   let welcomeShown = true
@@ -47,16 +45,7 @@ export default async function Home() {
           Compete with friends. Pick every match, every bracket, every award. The most accurate predictor wins.
         </p>
 
-        {user ? (
-          <div className="flex items-center justify-center gap-4 flex-wrap">
-            <Link href="/predictions" className="bg-accent text-accent-fg font-semibold uppercase tracking-wider rounded-lg px-6 py-3 hover:bg-accent-hover transition-colors text-sm">
-              Place Prediction
-            </Link>
-            <Link href="/leaderboard" className="border-2 border-dashed border-border-dashed text-fg-primary font-semibold uppercase tracking-wider rounded-lg px-6 py-3 hover:bg-bg-card-hover transition-colors text-sm">
-              View Leaderboard
-            </Link>
-          </div>
-        ) : (
+        {!user && (
           <div className="flex items-center justify-center gap-4 flex-wrap">
             <Link href="/login" className="bg-accent text-accent-fg font-semibold uppercase tracking-wider rounded-lg px-6 py-3 hover:bg-accent-hover transition-colors text-sm">
               Sign In to Play
@@ -66,24 +55,12 @@ export default async function Home() {
             </Link>
           </div>
         )}
-
-        {/* Deadline */}
-        <div className="mt-8 text-sm text-fg-muted">
-          {locked ? (
-            <span className="text-status-live font-medium">Prediction deadline has passed.</span>
-          ) : (
-            <span className="tabular-nums">
-              Predictions close in{' '}
-              <span className="text-fg-primary font-semibold">{countdown.days}d {countdown.hours}h {countdown.minutes}m</span>
-            </span>
-          )}
-        </div>
       </section>
 
       {/* ── Quick-nav cards (authenticated) ── */}
       {user && (
         <section className="mb-16">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 max-w-3xl mx-auto">
             {CARDS.map(c => {
               const href = c.href === '/users/[me]' ? `/users/${user.id}` : c.href
               return (
