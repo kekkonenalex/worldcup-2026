@@ -78,6 +78,13 @@ export interface SyncResult {
   cascadeAssigned: number
   cascadeEmptied: number
   errors: string[]
+  // Phase 30 — structured summary
+  fetched: number
+  finishedInFeed: number
+  written: number
+  skippedAlreadyFinalized: number
+  skippedFeedNotFinished: number
+  warnings: string[]
   // legacy aliases so existing callers that read .updated still get a number
   updated: number
   cleared: number
@@ -142,7 +149,12 @@ export async function bootstrapExternalIds(apiKey: string): Promise<SyncResult> 
     else bootstrapped++
   }
 
-  return { bootstrapped, updated: 0, cleared: 0, clearedKnockout: 0, groupUpdated: 0, groupCleared: 0, knockoutUpdated: 0, cascadeAssigned: 0, cascadeEmptied: 0, errors }
+  return {
+    bootstrapped, updated: 0, cleared: 0, clearedKnockout: 0, groupUpdated: 0, groupCleared: 0,
+    knockoutUpdated: 0, cascadeAssigned: 0, cascadeEmptied: 0, errors,
+    fetched: fdMatches.length, finishedInFeed: 0, written: 0,
+    skippedAlreadyFinalized: 0, skippedFeedNotFinished: 0, warnings: [],
+  }
 }
 
 /**
@@ -276,25 +288,18 @@ export async function rebuildKnockoutCascade(): Promise<{ assigned: number; empt
 }
 
 /**
- * Full sync:
- * 1. Unconditionally wipe all knockout match results (winner_team_id, scores).
- * 2. For group matches with external_id: write if FINISHED, clear otherwise.
- * 3. For knockout matches with external_id: write if FINISHED (clean slate from step 1).
- * 4. Rebuild knockout cascade (home_team_id / away_team_id) from current group results.
+ * Full sync (Phase 30 — manual entries are the source of truth):
+ *  - A match that is already finalized in the DB (status='finished' with both
+ *    scores populated) is NEVER overwritten or cleared. We only compare against
+ *    the feed and log a warning on mismatch.
+ *  - A not-yet-finalized match is written ONLY when the feed reports FINISHED.
+ *    When the feed is not finished we never null out existing values — at most
+ *    we refresh status / kickoff time (non-destructive).
+ *  - Rebuild the knockout cascade (home_team_id / away_team_id) afterwards.
  */
 export async function syncMatchResults(apiKey: string): Promise<SyncResult> {
   const supabase = await createClient()
 
-  // ── Step 1: Wipe all knockout results unconditionally ────────────────────────
-  const { data: wipedRows } = await supabase
-    .from('matches')
-    .update({ winner_team_id: null, home_score: null, away_score: null, status: 'scheduled' } as never)
-    .neq('stage', 'group')
-    .select('id')
-
-  const clearedKnockout = (wipedRows ?? []).length
-
-  // ── Steps 2 & 3: API sync ────────────────────────────────────────────────────
   const fdMatches = await fetchWorldCupMatches(apiKey)
   const fdById = new Map(fdMatches.map(m => [m.id, m]))
 
@@ -312,77 +317,115 @@ export async function syncMatchResults(apiKey: string): Promise<SyncResult> {
   const ourMatches = (ourMatchesRaw ?? []) as unknown as OurMatch[]
 
   let groupUpdated = 0
-  let groupCleared = 0
   let knockoutUpdated = 0
+  let finishedInFeed = 0
+  let skippedAlreadyFinalized = 0
+  let skippedFeedNotFinished = 0
+  const warnings: string[] = []
   const errors: string[] = []
 
   for (const m of ourMatches) {
     const fd = fdById.get(m.external_id)
     if (!fd) continue
 
-    const newStatus = fdStatusToInternal(fd.status)
+    const feedFinished = fdStatusToInternal(fd.status) === 'finished'
+    if (feedFinished) finishedInFeed++
 
-    if (m.stage === 'group') {
-      if (newStatus === 'finished') {
-        const newHome = fd.score.fullTime.home
-        const newAway = fd.score.fullTime.away
-        const scheduledAtChanged = fd.utcDate !== null && m.scheduled_at !== fd.utcDate
-        if (m.status === newStatus && m.home_score === newHome && m.away_score === newAway && !scheduledAtChanged) continue
-        const patch: Record<string, unknown> = { status: newStatus, home_score: newHome, away_score: newAway }
-        if (fd.utcDate !== null) patch.scheduled_at = fd.utcDate
-        const { error } = await supabase.from('matches').update(patch as never).eq('id', m.id)
-        if (error) errors.push(`group match ${m.id}: ${error.message}`)
-        else groupUpdated++
-      } else {
-        const hasStale = m.home_score !== null || m.away_score !== null || m.status !== newStatus || (fd.utcDate !== null && m.scheduled_at !== fd.utcDate)
-        if (hasStale) {
-          const patch: Record<string, unknown> = { status: newStatus, home_score: null, away_score: null }
-          if (fd.utcDate !== null) patch.scheduled_at = fd.utcDate
-          const { error } = await supabase.from('matches').update(patch as never).eq('id', m.id)
-          if (error) errors.push(`group match ${m.id} (clear): ${error.message}`)
-          else groupCleared++
+    const dbFinalized = m.status === 'finished' && m.home_score != null && m.away_score != null
+
+    // ── Manual entries win: never overwrite / clear a finalized match ──────────
+    if (dbFinalized) {
+      skippedAlreadyFinalized++
+      if (feedFinished) {
+        const fh = fd.score.fullTime.home
+        const fa = fd.score.fullTime.away
+        if (fh !== m.home_score || fa !== m.away_score) {
+          warnings.push(
+            `match ${m.id} already finalized in DB (${m.home_score}-${m.away_score}) but feed reports different (${fh}-${fa}) — manual entry takes precedence, not overwriting`
+          )
+        } else {
+          console.log(`[sync] match ${m.id} already finalized, feed agrees`)
         }
       }
-    } else {
-      // Knockout: already wiped in step 1 — only write if FINISHED
-      if (newStatus === 'finished') {
-        const newHome = fd.score.fullTime.home
-        const newAway = fd.score.fullTime.away
+      continue
+    }
+
+    // ── Not finalized: only ever WRITE a finished result; never clear ──────────
+    if (feedFinished) {
+      const newHome = fd.score.fullTime.home
+      const newAway = fd.score.fullTime.away
+      const patch: Record<string, unknown> = { status: 'finished', home_score: newHome, away_score: newAway }
+
+      if (m.stage !== 'group') {
         let winnerTeamId: number | null = null
         if (fd.score.winner === 'HOME_TEAM') winnerTeamId = m.home_team_id
         else if (fd.score.winner === 'AWAY_TEAM') winnerTeamId = m.away_team_id
+        patch.winner_team_id = winnerTeamId
+      }
 
-        const patch: Record<string, unknown> = { status: newStatus, home_score: newHome, away_score: newAway, winner_team_id: winnerTeamId }
-        if (shouldUpdateScheduledAt(m.scheduled_at, fd.utcDate)) patch.scheduled_at = fd.utcDate
+      // scheduled_at: groups accept any change; knockout only on >24h drift.
+      if (m.stage === 'group') {
+        if (fd.utcDate !== null && m.scheduled_at !== fd.utcDate) patch.scheduled_at = fd.utcDate
+      } else if (shouldUpdateScheduledAt(m.scheduled_at, fd.utcDate)) {
+        patch.scheduled_at = fd.utcDate
+      }
+
+      const { error } = await supabase.from('matches').update(patch as never).eq('id', m.id)
+      if (error) errors.push(`${m.stage} match ${m.id}: ${error.message}`)
+      else if (m.stage === 'group') groupUpdated++
+      else knockoutUpdated++
+    } else {
+      // Feed not finished — DO NOT clear scores. Only reflect live status /
+      // refreshed kickoff time. This is the branch that used to wipe results.
+      skippedFeedNotFinished++
+      const newStatus = fdStatusToInternal(fd.status)
+      const kickoffChanged =
+        m.stage === 'group'
+          ? (fd.utcDate !== null && m.scheduled_at !== fd.utcDate)
+          : shouldUpdateScheduledAt(m.scheduled_at, fd.utcDate)
+      if (m.status !== newStatus || kickoffChanged) {
+        const patch: Record<string, unknown> = { status: newStatus }
+        if (kickoffChanged) patch.scheduled_at = fd.utcDate
         const { error } = await supabase.from('matches').update(patch as never).eq('id', m.id)
-        if (error) errors.push(`knockout match ${m.id}: ${error.message}`)
-        else knockoutUpdated++
-      } else {
-        // Set status to reflect API state (scores already null from step 1)
-        const kickoffChanged = shouldUpdateScheduledAt(m.scheduled_at, fd.utcDate)
-        if (m.status !== newStatus || kickoffChanged) {
-          const patch: Record<string, unknown> = { status: newStatus }
-          if (kickoffChanged) patch.scheduled_at = fd.utcDate
-          await supabase.from('matches').update(patch as never).eq('id', m.id)
-        }
+        if (error) errors.push(`${m.stage} match ${m.id} (status): ${error.message}`)
       }
     }
   }
 
-  // ── Step 4: Rebuild cascade ──────────────────────────────────────────────────
+  // ── Rebuild knockout cascade (team assignment, not results) ───────────────────
   const cascade = await rebuildKnockoutCascade()
   errors.push(...cascade.errors)
 
+  const written = groupUpdated + knockoutUpdated
+
+  const summary = {
+    competition: 'WC',
+    fetched: fdMatches.length,
+    finished_in_feed: finishedInFeed,
+    written,
+    skipped_already_finalized: skippedAlreadyFinalized,
+    skipped_feed_not_finished: skippedFeedNotFinished,
+    warnings,
+    errors,
+  }
+  console.log('[sync] summary', JSON.stringify(summary))
+
   return {
-    clearedKnockout,
+    clearedKnockout: 0,
     groupUpdated,
-    groupCleared,
+    groupCleared: 0,
     knockoutUpdated,
     cascadeAssigned: cascade.assigned,
     cascadeEmptied: cascade.emptied,
     errors,
+    fetched: fdMatches.length,
+    finishedInFeed,
+    written,
+    skippedAlreadyFinalized,
+    skippedFeedNotFinished,
+    warnings,
     // legacy aliases
-    updated: groupUpdated + knockoutUpdated,
-    cleared: groupCleared,
+    updated: written,
+    cleared: 0,
   }
 }

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { recomputeBracketCascade } from '@/lib/results'
+import { revalidateLeaderboard, revalidateMatches } from '@/lib/cache'
 
 // ── Internal admin check (safe to use in server actions — no redirect thrown) ─
 
@@ -58,6 +59,8 @@ export async function saveGroupMatchResult(
     await recomputeBracketCascade()
   }
 
+  revalidateLeaderboard()
+  revalidateMatches()
   revalidatePath('/admin')
   return { success: true }
 }
@@ -107,6 +110,8 @@ export async function saveKnockoutWinner(
   }
 
   await recomputeBracketCascade()
+  revalidateLeaderboard()
+  revalidateMatches()
   revalidatePath('/admin')
   return { success: true }
 }

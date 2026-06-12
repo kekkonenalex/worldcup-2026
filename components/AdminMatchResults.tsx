@@ -276,12 +276,13 @@ export default function AdminMatchResults({ matches, teams, hasSomeExternalIds }
     setSyncState({ status: 'loading', message: '' })
     try {
       const res = await fetch('/api/admin/sync-now', { method: 'POST' })
-      const body = await res.json() as { clearedKnockout?: number; groupUpdated?: number; groupCleared?: number; knockoutUpdated?: number; cascadeAssigned?: number; cascadeEmptied?: number; errors?: string[]; error?: string }
+      const body = await res.json() as { fetched?: number; finishedInFeed?: number; written?: number; skippedAlreadyFinalized?: number; skippedFeedNotFinished?: number; cascadeAssigned?: number; warnings?: string[]; errors?: string[]; error?: string }
       if (!res.ok) {
         setSyncState({ status: 'error', message: body.error ?? 'Unknown error' })
       } else {
         const errs = body.errors?.length ? ` · ${body.errors.length} error(s)` : ''
-        const msg = `Cleared ${body.clearedKnockout ?? 0} knockout slots · Group: ${body.groupUpdated ?? 0} updated, ${body.groupCleared ?? 0} cleared · Knockout API: ${body.knockoutUpdated ?? 0} updated · Cascade: ${body.cascadeAssigned ?? 0} assigned${errs}`
+        const warns = body.warnings?.length ? ` · ${body.warnings.length} warning(s): ${body.warnings.join('; ')}` : ''
+        const msg = `Fetched ${body.fetched ?? 0} · ${body.finishedInFeed ?? 0} finished in feed · ${body.written ?? 0} written · ${body.skippedAlreadyFinalized ?? 0} already finalized (protected) · ${body.skippedFeedNotFinished ?? 0} not finished · Cascade: ${body.cascadeAssigned ?? 0} assigned${warns}${errs}`
         setSyncState({ status: 'success', message: msg })
         router.refresh()
       }
