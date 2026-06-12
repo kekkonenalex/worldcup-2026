@@ -89,5 +89,12 @@ select:not(.score-pill-field) {
   width: 100%;
 }
 
+/* -- Modal dialog backdrop -- */
+
+dialog::backdrop {
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+}
+
 /* ── Background watermark ───────────────────────────────────────────────────── */
 

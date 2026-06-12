@@ -10,8 +10,8 @@ export default function TournamentLoading() {
       {/* Group Stage heading */}
       <div className="h-5 w-32 bg-bg-card rounded mb-4" />
 
-      {/* 12 group cards in 3-col grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
+      {/* 12 group cards in responsive grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 mb-12">
         {Array.from({ length: 12 }).map((_, i) => (
           <div key={i} className="rounded-card border border-border-subtle bg-bg-card p-4">
             <div className="h-4 w-16 bg-bg-elevated rounded mb-3" />

@@ -1,23 +1,16 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import {
-  computeActualStandings,
-  type MatchInput,
-  type ActualResultInput,
-  type TeamInput,
-} from '@/lib/simulation'
 import { BRACKET_STRUCTURE, type ResolvedMatch } from '@/lib/bracket'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { UpcomingMatches } from '@/components/UpcomingMatches'
-import { GroupStandingsTable } from '@/components/ui/GroupStandingsTable'
+import { GroupCardsGrid } from '@/components/tournament/GroupCardsGrid'
+import { getGroupDataForHub } from '@/lib/tournament/group-data'
 import { Card } from '@/components/ui/Card'
 import { TournamentBracketView } from '@/components/bracket/TournamentBracketView'
 import { TopScorers } from '@/components/TopScorers'
 import type { TeamStanding } from '@/lib/simulation'
 
 export const dynamic = 'force-dynamic'
-
-const GROUP_LETTERS = 'ABCDEFGHIJKL'.split('')
 
 type RawMatch = {
   id: number
@@ -40,7 +33,7 @@ export default async function TournamentPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [{ data: rawMatchesData }, { data: rawTeamsData }] = await Promise.all([
+  const [{ data: rawMatchesData }, groups] = await Promise.all([
     supabase
       .from('matches')
       .select(`
@@ -51,59 +44,11 @@ export default async function TournamentPage() {
         away_team:teams!matches_away_team_id_fkey(id, name, short_code, flag_emoji, group_letter)
       `)
       .order('match_number', { ascending: true }),
-    supabase.from('teams').select('id, name, short_code, flag_emoji, group_letter'),
+    getGroupDataForHub(user.id),
   ])
 
   const allMatches = (rawMatchesData ?? []) as unknown as RawMatch[]
-  const allTeams = (rawTeamsData ?? []) as unknown as TeamInput[]
-
-  const groupMatches = allMatches.filter(m => m.stage === 'group')
   const knockoutMatches = allMatches.filter(m => m.stage !== 'group')
-
-  // ── Compute group standings ──────────────────────────────────────────────────
-
-  const matchesByGroup = new Map<string, MatchInput[]>()
-  const teamsByGroup = new Map<string, Map<number, TeamInput>>()
-  const resultsByGroup = new Map<string, ActualResultInput[]>()
-
-  for (const m of groupMatches) {
-    const letter = m.group_letter
-    if (!letter || !m.home_team_id || !m.away_team_id) continue
-
-    if (!matchesByGroup.has(letter)) { matchesByGroup.set(letter, []); teamsByGroup.set(letter, new Map()); resultsByGroup.set(letter, []) }
-
-    matchesByGroup.get(letter)!.push({ id: m.id, match_number: m.match_number, group_letter: letter, home_team_id: m.home_team_id, away_team_id: m.away_team_id })
-
-    const tMap = teamsByGroup.get(letter)!
-    if (m.home_team && !tMap.has(m.home_team.id)) tMap.set(m.home_team.id, { ...m.home_team, group_letter: letter })
-    if (m.away_team && !tMap.has(m.away_team.id)) tMap.set(m.away_team.id, { ...m.away_team, group_letter: letter })
-
-    if (m.home_score != null && m.away_score != null) {
-      resultsByGroup.get(letter)!.push({ match_id: m.id, home_score: m.home_score, away_score: m.away_score })
-    }
-  }
-
-  const groupStandings = GROUP_LETTERS.map(letter => {
-    const ms = matchesByGroup.get(letter) ?? []
-    const ts = Array.from(teamsByGroup.get(letter)?.values() ?? [])
-    const rs = resultsByGroup.get(letter) ?? []
-    if (ms.length === 0) return { letter, teams: [] }
-    const standings = computeActualStandings(letter, ms, rs, ts)
-    const complete = rs.length === ms.length && ms.length === 6
-    return {
-      letter,
-      complete,
-      teams: standings.map(s => ({
-        name: s.team_name,
-        abbreviation: s.short_code,
-        flag: s.flag_emoji,
-        w: s.won,
-        d: s.drawn,
-        l: s.lost,
-        pts: s.points,
-      })),
-    }
-  })
 
   // ── Build bracket view data ──────────────────────────────────────────────────
 
@@ -151,16 +96,8 @@ export default async function TournamentPage() {
       {/* ── Group Stage ── */}
       <section className="mb-12">
         <SectionHeading>Group Stage</SectionHeading>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {groupStandings.map(g => (
-            <GroupStandingsTable
-              key={g.letter}
-              groupLetter={g.letter}
-              teams={g.teams}
-              complete={g.complete ?? false}
-            />
-          ))}
-        </div>
+        <p className="text-fg-muted text-xs mb-4">Tap a group for standings, results, and your predictions.</p>
+        <GroupCardsGrid groups={groups} />
       </section>
 
       {/* ── Knockout Phase ── */}
