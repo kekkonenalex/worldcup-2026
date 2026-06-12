@@ -113,7 +113,7 @@ function GroupPredictionsSection({
                     <MatchTime iso={m.scheduled_at} className="text-xs text-fg-muted leading-none" />
                     {m.finished ? (
                       <>
-                        <span className="font-mono tabular-nums text-fg-primary text-sm leading-none">
+                        <span className="font-mono tabular-nums text-accent text-sm leading-none">
                           {m.actual_home_score} — {m.actual_away_score}
                         </span>
                         <span className="text-[10px] text-fg-muted leading-none">
