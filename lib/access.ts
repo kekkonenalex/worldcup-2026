@@ -8,30 +8,12 @@ export async function canViewPredictions(params: {
   targetUserId: string
   supabase: SupabaseClient
 }): Promise<{ allowed: boolean; reason?: AccessReason }> {
-  const { viewerId, targetUserId, supabase } = params
+  const { viewerId, targetUserId } = params
 
+  // Your own predictions are always visible. Everyone else's become public once
+  // the deadline passes — no shared-league requirement, so you can follow the
+  // picks of anyone on the leaderboard.
   if (viewerId === targetUserId) return { allowed: true, reason: 'self' }
   if (!isPastDeadline()) return { allowed: false, reason: 'pre_deadline' }
-
-  const { data: viewerMemberships } = await supabase
-    .from('league_memberships')
-    .select('league_id')
-    .eq('user_id', viewerId)
-
-  const viewerLeagueIds = ((viewerMemberships as unknown as { league_id: number }[]) ?? [])
-    .map(m => m.league_id)
-
-  if (viewerLeagueIds.length === 0) return { allowed: false, reason: 'not_in_shared_league' }
-
-  const { data: shared } = await supabase
-    .from('league_memberships')
-    .select('id')
-    .eq('user_id', targetUserId)
-    .in('league_id', viewerLeagueIds)
-    .limit(1)
-
-  const hasSharedLeague = ((shared as unknown[]) ?? []).length > 0
-  return hasSharedLeague
-    ? { allowed: true, reason: 'past_deadline' }
-    : { allowed: false, reason: 'not_in_shared_league' }
+  return { allowed: true, reason: 'past_deadline' }
 }

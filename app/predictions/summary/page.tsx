@@ -17,9 +17,18 @@ import {
   type ResolvedMatch,
 } from '@/lib/bracket'
 import PredictionsSummary from '@/components/PredictionsSummary'
+import { scoreGroupMatch } from '@/lib/scoring'
 import type { MatchWithTeams, GroupPrediction, KnockoutPrediction, AwardPrediction } from '@/types/database'
 
 const GROUP_LETTERS = 'ABCDEFGHIJKL'.split('')
+
+// Match row including the ACTUAL result (home_score/away_score/status are the
+// real outcome, distinct from the user's predicted scores).
+export type GroupMatchRaw = MatchWithTeams & {
+  home_score: number | null
+  away_score: number | null
+  status: string
+}
 
 export type GroupMatchSummary = {
   match_number: number
@@ -30,9 +39,52 @@ export type GroupMatchSummary = {
   away_name: string
   away_flag: string
   away_code: string
-  home_score: number | null
-  away_score: number | null
+  home_score: number | null      // predicted home score
+  away_score: number | null      // predicted away score
   scheduled_at: string | null
+  actual_home_score: number | null
+  actual_away_score: number | null
+  finished: boolean
+  points: number | null          // points earned (null if unfinished or no prediction)
+}
+
+// Shared builder so the own-summary, public-profile, and league-member pages all
+// render identical predictions + actual-result + points.
+export function buildGroupMatchSummaries(
+  matches: GroupMatchRaw[],
+  groupPreds: GroupPrediction[],
+): GroupMatchSummary[] {
+  const predMap = new Map<number, GroupPrediction>()
+  for (const p of groupPreds) predMap.set(p.match_id, p)
+
+  return matches.map(m => {
+    const pred = predMap.get(m.id)
+    const finished = m.home_score != null && m.away_score != null
+    const points =
+      finished && pred
+        ? scoreGroupMatch(
+            { home: pred.predicted_home_score, away: pred.predicted_away_score },
+            { home: m.home_score as number, away: m.away_score as number },
+          )
+        : null
+    return {
+      match_number: m.match_number,
+      group_letter: m.group_letter ?? '',
+      home_name: m.home_team?.name ?? '',
+      home_flag: m.home_team?.flag_emoji ?? '',
+      home_code: m.home_team?.short_code ?? '',
+      away_name: m.away_team?.name ?? '',
+      away_flag: m.away_team?.flag_emoji ?? '',
+      away_code: m.away_team?.short_code ?? '',
+      home_score: pred?.predicted_home_score ?? null,
+      away_score: pred?.predicted_away_score ?? null,
+      scheduled_at: m.scheduled_at ?? null,
+      actual_home_score: m.home_score ?? null,
+      actual_away_score: m.away_score ?? null,
+      finished,
+      points,
+    }
+  })
 }
 
 export type CompletionStatus = {
@@ -66,13 +118,14 @@ export default async function SummaryPage() {
     .from('matches')
     .select(`
       id, match_number, group_letter, home_team_id, away_team_id, scheduled_at,
+      home_score, away_score, status,
       home_team:teams!matches_home_team_id_fkey(id, name, short_code, group_letter, flag_emoji),
       away_team:teams!matches_away_team_id_fkey(id, name, short_code, group_letter, flag_emoji)
     `)
     .eq('stage', 'group')
     .order('match_number', { ascending: true })
 
-  const matches = (rawMatches ?? []) as unknown as MatchWithTeams[]
+  const matches = (rawMatches ?? []) as unknown as GroupMatchRaw[]
 
   // Fetch group predictions
   const { data: rawGroupPreds } = await supabase
@@ -118,26 +171,8 @@ export default async function SummaryPage() {
     awardsCount,
   }
 
-  // Build group match summaries (all 72 matches with prediction overlay)
-  const predMap = new Map<number, GroupPrediction>()
-  for (const p of groupPreds) predMap.set(p.match_id, p)
-
-  const groupMatchSummaries: GroupMatchSummary[] = matches.map(m => {
-    const pred = predMap.get(m.id)
-    return {
-      match_number: m.match_number,
-      group_letter: m.group_letter ?? '',
-      home_name: m.home_team?.name ?? '',
-      home_flag: m.home_team?.flag_emoji ?? '',
-      home_code: m.home_team?.short_code ?? '',
-      away_name: m.away_team?.name ?? '',
-      away_flag: m.away_team?.flag_emoji ?? '',
-      away_code: m.away_team?.short_code ?? '',
-      home_score: pred?.predicted_home_score ?? null,
-      away_score: pred?.predicted_away_score ?? null,
-      scheduled_at: m.scheduled_at ?? null,
-    }
-  })
+  // Build group match summaries (all 72 matches with prediction + result overlay)
+  const groupMatchSummaries = buildGroupMatchSummaries(matches, groupPreds)
 
   // Run simulation + resolve bracket only if group stage is complete
   let advancingTeams: TeamStanding[] = []

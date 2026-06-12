@@ -99,25 +99,48 @@ function GroupPredictionsSection({
         <div key={letter}>
           <div className="text-xs font-bold text-fg-muted uppercase mb-2">Group {letter}</div>
           <div className="space-y-1">
-            {matches.map(m => (
-              <div
-                key={m.match_number}
-                className={`flex items-center gap-2 text-sm px-3 py-2 rounded-lg ${m.home_score === null ? 'text-fg-muted' : 'text-fg-secondary'}`}
-              >
-                <span className="flex-1 flex justify-end">
-                  <TeamBadge name={m.home_name} abbreviation={m.home_code} size="sm" />
-                </span>
-                <span className="flex flex-col items-center mx-1 shrink-0 w-20 gap-0.5">
-                  <MatchTime iso={m.scheduled_at} className="text-xs text-fg-muted leading-none" />
-                  <span className="font-mono tabular-nums text-fg-primary text-xs">
-                    {m.home_score !== null ? `${m.home_score} — ${m.away_score}` : 'vs'}
+            {matches.map(m => {
+              const hasPick = m.home_score !== null
+              return (
+                <div
+                  key={m.match_number}
+                  className="flex items-center gap-2 text-sm px-3 py-2 rounded-lg bg-white/5"
+                >
+                  <span className="flex-1 flex justify-end">
+                    <TeamBadge name={m.home_name} abbreviation={m.home_code} size="sm" />
                   </span>
-                </span>
-                <span className="flex-1">
-                  <TeamBadge name={m.away_name} abbreviation={m.away_code} size="sm" />
-                </span>
-              </div>
-            ))}
+                  <span className="flex flex-col items-center mx-1 shrink-0 w-24 gap-0.5">
+                    <MatchTime iso={m.scheduled_at} className="text-xs text-fg-muted leading-none" />
+                    {m.finished ? (
+                      <>
+                        <span className="font-mono tabular-nums text-fg-primary text-sm leading-none">
+                          {m.actual_home_score} — {m.actual_away_score}
+                        </span>
+                        <span className="text-[10px] text-fg-muted leading-none">
+                          {hasPick ? `pick ${m.home_score}–${m.away_score}` : 'no pick'}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="font-mono tabular-nums text-fg-primary text-xs leading-none">
+                        {hasPick ? `${m.home_score} — ${m.away_score}` : 'vs'}
+                      </span>
+                    )}
+                  </span>
+                  <span className="flex-1">
+                    <TeamBadge name={m.away_name} abbreviation={m.away_code} size="sm" />
+                  </span>
+                  {m.finished && m.points !== null ? (
+                    <span
+                      className={`shrink-0 w-12 text-right text-xs font-bold tabular-nums ${m.points > 0 ? 'text-accent' : 'text-fg-muted'}`}
+                    >
+                      {m.points > 0 ? `+${m.points}` : '0'} pts
+                    </span>
+                  ) : (
+                    <span className="shrink-0 w-12" aria-hidden />
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
       ))}
