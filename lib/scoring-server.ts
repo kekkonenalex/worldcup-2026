@@ -11,6 +11,30 @@ import {
 
 export type { AwardResult }
 
+// PostgREST caps a single .select() at 1000 rows. Tables that scale with
+// users × matches (group_predictions ≈ users×72, knockout ≈ users×32) blow past
+// that, so we must page through every row — otherwise predictions are silently
+// dropped and those users score 0.
+async function selectAll(
+  supabase: SupabaseClient,
+  table: string,
+  columns: string,
+): Promise<unknown[]> {
+  const pageSize = 1000
+  const all: unknown[] = []
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabase
+      .from(table)
+      .select(columns)
+      .range(from, from + pageSize - 1)
+    if (error) throw new Error(`selectAll(${table}): ${error.message}`)
+    const batch = data ?? []
+    all.push(...batch)
+    if (batch.length < pageSize) break
+  }
+  return all
+}
+
 export async function fetchAllScoringData(supabase: SupabaseClient): Promise<{
   users: { id: string; display_name: string }[]
   groupMatches: Match[]
@@ -22,19 +46,20 @@ export async function fetchAllScoringData(supabase: SupabaseClient): Promise<{
   teams: Team[]
 }> {
   const [
-    { data: rawProfiles },
+    rawProfiles,
     { data: rawMatches },
-    { data: rawGroupPreds },
-    { data: rawKnockoutPreds },
-    { data: rawAwardPreds },
+    rawGroupPreds,
+    rawKnockoutPreds,
+    rawAwardPreds,
     { data: rawAwardResult },
     { data: rawTeams },
   ] = await Promise.all([
-    supabase.from('profiles').select('id, display_name'),
+    // Paginated: these scale with user count and exceed PostgREST's 1000-row cap.
+    selectAll(supabase, 'profiles', 'id, display_name'),
     supabase.from('matches').select('*').order('match_number', { ascending: true }),
-    supabase.from('group_predictions').select('*'),
-    supabase.from('knockout_predictions').select('*'),
-    supabase.from('award_predictions').select('*'),
+    selectAll(supabase, 'group_predictions', '*'),
+    selectAll(supabase, 'knockout_predictions', '*'),
+    selectAll(supabase, 'award_predictions', '*'),
     supabase.from('award_results').select('*').limit(1),
     supabase.from('teams').select('*'),
   ])

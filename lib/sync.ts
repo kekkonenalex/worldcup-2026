@@ -1,6 +1,6 @@
 // Server-only: syncs football-data.org match data into Supabase.
 
-import { createClient } from '@/lib/supabase/server'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { fetchWorldCupMatches, classifyStage } from '@/lib/football-data'
 import {
   computeActualStandings,
@@ -11,7 +11,18 @@ import {
   type ThirdPlaceResult,
 } from '@/lib/simulation'
 import { BRACKET_STRUCTURE, assignThirdPlaceTeams, type FixedSource } from '@/lib/bracket'
-import type { Match, MatchStage, MatchStatus } from '@/types/database'
+import type { Database, Match, MatchStage, MatchStatus } from '@/types/database'
+
+// Sync runs from cron (no user session) and admin routes. It must bypass RLS,
+// so it always uses a service-role client — NOT the cookie-based server client,
+// which is anonymous under cron and gets all match writes silently blocked.
+function createSyncClient() {
+  return createServiceClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } }
+  )
+}
 
 // Known name variations from football-data.org → our teams table names.
 const TEAM_ALIASES: Record<string, string> = {
@@ -94,7 +105,7 @@ export interface SyncResult {
  * One-time bootstrap: links our matches rows to external_id via team name matching.
  */
 export async function bootstrapExternalIds(apiKey: string): Promise<SyncResult> {
-  const supabase = await createClient()
+  const supabase = createSyncClient()
   const fdMatches = await fetchWorldCupMatches(apiKey)
 
   const { data: ourMatchesRaw } = await supabase
@@ -162,7 +173,7 @@ export async function bootstrapExternalIds(apiKey: string): Promise<SyncResult> 
  * Explicitly nulls slots that can't be resolved. Idempotent.
  */
 export async function rebuildKnockoutCascade(): Promise<{ assigned: number; emptied: number; errors: string[] }> {
-  const supabase = await createClient()
+  const supabase = createSyncClient()
 
   const [{ data: rawMatches }, { data: rawTeams }] = await Promise.all([
     supabase.from('matches').select('*').order('match_number', { ascending: true }),
@@ -298,7 +309,7 @@ export async function rebuildKnockoutCascade(): Promise<{ assigned: number; empt
  *  - Rebuild the knockout cascade (home_team_id / away_team_id) afterwards.
  */
 export async function syncMatchResults(apiKey: string): Promise<SyncResult> {
-  const supabase = await createClient()
+  const supabase = createSyncClient()
 
   const fdMatches = await fetchWorldCupMatches(apiKey)
   const fdById = new Map(fdMatches.map(m => [m.id, m]))
@@ -370,10 +381,20 @@ export async function syncMatchResults(apiKey: string): Promise<SyncResult> {
         patch.scheduled_at = fd.utcDate
       }
 
-      const { error } = await supabase.from('matches').update(patch as never).eq('id', m.id)
-      if (error) errors.push(`${m.stage} match ${m.id}: ${error.message}`)
-      else if (m.stage === 'group') groupUpdated++
-      else knockoutUpdated++
+      const { data: writtenRows, error } = await supabase
+        .from('matches')
+        .update(patch as never)
+        .eq('id', m.id)
+        .select('id')
+      if (error) {
+        errors.push(`${m.stage} match ${m.id}: ${error.message}`)
+      } else if ((writtenRows ?? []).length === 0) {
+        errors.push(`${m.stage} match ${m.id}: update affected 0 rows (RLS or missing row)`)
+      } else if (m.stage === 'group') {
+        groupUpdated++
+      } else {
+        knockoutUpdated++
+      }
     } else {
       // Feed not finished — DO NOT clear scores. Only reflect live status /
       // refreshed kickoff time. This is the branch that used to wipe results.
