@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { isPastDeadline } from '@/lib/config'
 import LeagueDetail from '@/components/LeagueDetail'
+import LeagueInviteCard from '@/components/LeagueInviteCard'
 import { LeaderboardRow } from '@/components/ui/LeaderboardRow'
 import { getAllUserScores } from '@/lib/scoring-server'
 import { rankUsers, type UserScoreBreakdown } from '@/lib/scoring'
@@ -87,7 +88,7 @@ export default async function LeagueDetailPage({ params }: { params: Promise<{ i
         <p className="text-fg-muted text-sm">Created by {creatorName}</p>
       </div>
 
-      <LeagueDetail league={league} members={members} currentUserId={user.id} isPastDeadline={isPastDeadline()} />
+      <LeagueInviteCard inviteCode={league.invite_code} />
 
       <div className="mt-8">
         <h2 className="text-2xl font-display tracking-wider uppercase text-fg-primary mb-1">League Standings</h2>
@@ -116,6 +117,8 @@ export default async function LeagueDetailPage({ params }: { params: Promise<{ i
           </div>
         )}
       </div>
+
+      <LeagueDetail league={league} members={members} currentUserId={user.id} isPastDeadline={isPastDeadline()} />
     </div>
   )
 }

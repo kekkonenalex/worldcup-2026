@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { leaveLeague, removeMember } from '@/app/leagues/actions'
-import { Card } from '@/components/ui/Card'
 import type { MemberInfo } from '@/app/leagues/[id]/page'
 
 interface LeagueRow {
@@ -20,18 +19,6 @@ interface Props {
   members: MemberInfo[]
   currentUserId: string
   isPastDeadline: boolean
-}
-
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false)
-  const handleCopy = async () => {
-    try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1500) } catch {}
-  }
-  return (
-    <button onClick={handleCopy} className="ml-1.5 rounded px-2 py-0.5 text-xs border border-border-subtle hover:border-border-strong transition-colors">
-      {copied ? <span className="text-green-400">Copied!</span> : <span className="text-fg-muted">Copy</span>}
-    </button>
-  )
 }
 
 function CompletionPill({ value, total }: { value: number; total: number }) {
@@ -124,15 +111,6 @@ export default function LeagueDetail({ league, members, currentUserId, isPastDea
 
   return (
     <div>
-      {/* Invite code */}
-      <Card className="mb-6">
-        <p className="text-xs font-semibold uppercase tracking-wider text-fg-muted mb-2">Invite code — share to add members</p>
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-xl tracking-widest text-fg-primary">{league.invite_code}</span>
-          <CopyButton text={league.invite_code} />
-        </div>
-      </Card>
-
       {/* Members */}
       <div className="mb-8">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-fg-muted mb-3">Members ({members.length})</h2>
