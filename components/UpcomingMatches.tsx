@@ -4,6 +4,7 @@ import { TeamBadge } from '@/components/ui/TeamBadge'
 import { MatchTime } from '@/components/ui/MatchTime'
 
 type UpcomingMatch = {
+  id: number
   match_number: number
   stage: string
   group_letter: string | null
@@ -28,7 +29,7 @@ export async function UpcomingMatches() {
   const { data } = await supabase
     .from('matches')
     .select(`
-      match_number, stage, group_letter, scheduled_at,
+      id, match_number, stage, group_letter, scheduled_at,
       home_team:teams!matches_home_team_id_fkey(name, short_code, flag_emoji),
       away_team:teams!matches_away_team_id_fkey(name, short_code, flag_emoji)
     `)
@@ -38,6 +39,19 @@ export async function UpcomingMatches() {
     .limit(4)
 
   const matches = (data ?? []) as unknown as UpcomingMatch[]
+
+  // The viewer's own group-stage score predictions, keyed by match id.
+  const { data: { user } } = await supabase.auth.getUser()
+  const predByMatchId = new Map<number, { home: number; away: number }>()
+  if (user) {
+    const { data: predRows } = await supabase
+      .from('group_predictions')
+      .select('match_id, predicted_home_score, predicted_away_score')
+      .eq('user_id', user.id)
+    for (const p of (predRows ?? []) as unknown as { match_id: number; predicted_home_score: number; predicted_away_score: number }[]) {
+      predByMatchId.set(p.match_id, { home: p.predicted_home_score, away: p.predicted_away_score })
+    }
+  }
 
   if (matches.length === 0) {
     return (
@@ -52,7 +66,9 @@ export async function UpcomingMatches() {
     <section className="mb-12">
       <SectionHeading>Upcoming Matches</SectionHeading>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {matches.map(m => (
+        {matches.map(m => {
+          const pick = m.stage === 'group' ? predByMatchId.get(m.id) : undefined
+          return (
           <div
             key={m.match_number}
             className="bg-bg-card border border-border-subtle rounded-card p-4 flex flex-col gap-3"
@@ -88,12 +104,26 @@ export async function UpcomingMatches() {
               )}
             </div>
 
+            {m.stage === 'group' && (
+              <div className="text-[11px] mt-auto">
+                {pick ? (
+                  <span className="text-fg-secondary">
+                    Your pick:{' '}
+                    <span className="text-fg-primary font-semibold tabular-nums">{pick.home}–{pick.away}</span>
+                  </span>
+                ) : (
+                  <span className="text-fg-muted">No pick</span>
+                )}
+              </div>
+            )}
+
             <MatchTime
               iso={m.scheduled_at}
-              className="text-[11px] text-fg-muted tabular-nums mt-auto"
+              className={`text-[11px] text-fg-muted tabular-nums ${m.stage === 'group' ? '' : 'mt-auto'}`}
             />
           </div>
-        ))}
+          )
+        })}
       </div>
     </section>
   )
