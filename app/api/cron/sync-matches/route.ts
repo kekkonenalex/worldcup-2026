@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { syncMatchResults } from '@/lib/sync'
+import { bootstrapExternalIds, syncMatchResults } from '@/lib/sync'
 import { revalidateMatches, revalidateLeaderboard } from '@/lib/cache'
 
 export const dynamic = 'force-dynamic'
@@ -18,10 +18,15 @@ export async function GET(request: Request) {
   }
 
   try {
+    // Map external_id for any knockout fixtures whose teams are now known.
+    // Knockout matches start with team-less slots (no external_id); once a round
+    // resolves, this links them to the feed so the sync below can auto-set the
+    // winner_team_id (and scores) without manual admin entry.
+    const bootstrap = await bootstrapExternalIds(apiKey)
     const result = await syncMatchResults(apiKey)
     revalidateMatches()
     revalidateLeaderboard()
-    return NextResponse.json(result)
+    return NextResponse.json({ bootstrapped: bootstrap.bootstrapped, ...result })
   } catch (err) {
     console.error('[cron] sync error:', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

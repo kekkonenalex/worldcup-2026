@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/Card'
 import { WelcomePopup } from '@/components/welcome/WelcomePopup'
+import { KnockoutLivePopup } from '@/components/announcements/KnockoutLivePopup'
 import type { Profile } from '@/types/database'
 
 const STEPS = [
@@ -23,16 +24,23 @@ export default async function Home() {
 
   let isAdmin = false
   let welcomeShown = true
+  let knockoutAnnounceShown = true
   if (user) {
     const { data: profileRow } = await supabase
       .from('profiles')
-      .select('is_admin, welcome_shown')
+      .select('is_admin, welcome_shown, knockout_announce_shown')
       .eq('id', user.id)
       .single()
-    const profile = profileRow as Pick<Profile, 'is_admin' | 'welcome_shown'> | null
+    const profile = profileRow as Pick<Profile, 'is_admin' | 'welcome_shown' | 'knockout_announce_shown'> | null
     isAdmin = !!profile?.is_admin
     welcomeShown = !!profile?.welcome_shown
+    knockoutAnnounceShown = !!profile?.knockout_announce_shown
   }
+
+  // Priority: brand-new users see the welcome popup first; everyone else who
+  // hasn't seen the knockout announcement gets it. Never both at once.
+  const showWelcome = !!user && !welcomeShown
+  const showKnockoutAnnounce = !!user && welcomeShown && !knockoutAnnounceShown
 
   return (
     <div className="pb-16">
@@ -108,7 +116,8 @@ export default async function Home() {
           </div>
         </section>
       )}
-      {user && <WelcomePopup initiallyShown={!welcomeShown} />}
+      {showWelcome && <WelcomePopup initiallyShown />}
+      {showKnockoutAnnounce && <KnockoutLivePopup initiallyShown />}
     </div>
   )
 }

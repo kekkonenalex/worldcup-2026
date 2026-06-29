@@ -4,6 +4,7 @@ export interface Profile {
   password_set: boolean
   is_admin: boolean
   welcome_shown: boolean
+  knockout_announce_shown: boolean
   created_at: string
 }
 

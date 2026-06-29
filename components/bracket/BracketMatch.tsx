@@ -13,6 +13,8 @@ export type BracketMatchProps = {
   onPick?: (teamId: number) => void
   disabled?: boolean
   kickoffIso?: string | null
+  // Final-time goals for the played match (null until a result is recorded).
+  score?: { home: number | null; away: number | null } | null
 }
 
 function useKickoffLabel(iso: string | null | undefined): string {
@@ -37,12 +39,16 @@ function TeamRow({
   picked,
   winner,
   loser,
+  goals,
+  penaltyWinner,
   onClick,
 }: {
   team: TeamStanding | null
   picked: boolean
   winner: boolean
   loser: boolean
+  goals?: number | null
+  penaltyWinner?: boolean
   onClick?: () => void
 }) {
   const classes = [
@@ -55,7 +61,15 @@ function TeamRow({
   const inner = team ? (
     <>
       <TeamBadge name={team.team_name} abbreviation={team.short_code} size="sm" />
-      {picked && <span className="ml-auto text-accent text-[10px] font-bold leading-none">✓</span>}
+      <span className="ml-auto flex items-center gap-1.5 leading-none">
+        {picked && <span className="text-accent text-[10px] font-bold">✓</span>}
+        {penaltyWinner && <span className="text-[9px] text-fg-muted font-semibold">(P)</span>}
+        {goals != null && (
+          <span className={`tabular-nums text-[12px] font-bold ${winner ? 'text-accent' : 'text-fg-secondary'}`}>
+            {goals}
+          </span>
+        )}
+      </span>
     </>
   ) : (
     <span className="text-fg-muted text-[11px] italic leading-none">TBD</span>
@@ -80,12 +94,17 @@ export function BracketMatch({
   onPick,
   disabled = false,
   kickoffIso,
+  score,
 }: BracketMatchProps) {
   const effectivePick = pickedWinnerId ?? match.user_pick_team_id
   const hasResult = actualWinnerId != null
 
   const aWins = hasResult && match.team_a?.team_id === actualWinnerId
   const bWins = hasResult && match.team_b?.team_id === actualWinnerId
+
+  // Match decided on penalties: regulation/ET ended level but a winner is set.
+  const hasScore = score != null && score.home != null && score.away != null
+  const decidedOnPens = hasResult && hasScore && score!.home === score!.away
 
   const canPick = mode === 'predict' && !disabled && !hasResult
   const kickoffLabel = useKickoffLabel(kickoffIso)
@@ -109,6 +128,8 @@ export function BracketMatch({
           picked={effectivePick != null && match.team_a?.team_id === effectivePick}
           winner={aWins}
           loser={hasResult && !aWins && match.team_a != null}
+          goals={hasScore ? score!.home : null}
+          penaltyWinner={decidedOnPens && aWins}
           onClick={canPick && match.team_a ? () => onPick!(match.team_a!.team_id) : undefined}
         />
         <div className="mx-2.5 h-px bg-border-subtle" />
@@ -117,6 +138,8 @@ export function BracketMatch({
           picked={effectivePick != null && match.team_b?.team_id === effectivePick}
           winner={bWins}
           loser={hasResult && !bWins && match.team_b != null}
+          goals={hasScore ? score!.away : null}
+          penaltyWinner={decidedOnPens && bWins}
           onClick={canPick && match.team_b ? () => onPick!(match.team_b!.team_id) : undefined}
         />
       </div>

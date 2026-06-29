@@ -78,6 +78,9 @@ export default async function TournamentPage() {
   const kickoffMap: Record<number, string | null> = Object.fromEntries(
     knockoutMatches.map(m => [m.match_number, m.scheduled_at])
   )
+  const scoreMap: Record<number, { home: number | null; away: number | null } | null> = Object.fromEntries(
+    knockoutMatches.map(m => [m.match_number, { home: m.home_score, away: m.away_score }])
+  )
 
   return (
     <div className="pb-16">
@@ -107,6 +110,7 @@ export default async function TournamentPage() {
           resolvedMatches={knockoutResolved}
           winnerMap={winnerMap}
           kickoffMap={kickoffMap}
+          scoreMap={scoreMap}
         />
       </section>
 
