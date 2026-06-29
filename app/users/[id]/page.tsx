@@ -26,6 +26,14 @@ export const dynamic = 'force-dynamic'
 
 const GROUP_LETTERS = 'ABCDEFGHIJKL'.split('')
 
+const KO_ROUND_LABELS: Record<string, string> = {
+  R32: 'Round of 32',
+  R16: 'Round of 16',
+  QF: 'Quarter-finals',
+  SF: 'Semi-finals',
+  Final: 'Final',
+}
+
 function countAwards(award: AwardPrediction | null): number {
   if (!award) return 0
   return [
@@ -188,6 +196,61 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
             <span>Boot player {breakdown.tiebreakers.goldenBoot ? '✓' : '✗'}</span>
             <span>Group pts {breakdown.tiebreakers.groupPoints}</span>
             <span>R32 correct {breakdown.tiebreakers.r32Correct}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Knockout scoring breakdown (per round, per team) */}
+      {access.allowed && breakdown && breakdown.knockoutDetail.some(r => r.teams.length > 0) && (
+        <div className="rounded-card bg-bg-card border border-border-subtle p-5 mb-6">
+          <div className="flex items-baseline justify-between mb-4">
+            <h2 className="text-lg font-display tracking-wide uppercase text-fg-primary">Knockout Scoring</h2>
+            <span className="text-sm text-fg-muted">
+              <span className="text-accent font-semibold tabular-nums">{breakdown.knockoutTotal}</span> pts
+            </span>
+          </div>
+          {!breakdown.knockoutR32Resolved && (
+            <p className="text-xs text-fg-muted mb-4">
+              Round-of-32 qualification points are awarded once the full group stage is finished.
+            </p>
+          )}
+          <div className="space-y-4">
+            {breakdown.knockoutDetail.filter(r => r.teams.length > 0).map(round => (
+              <div key={round.round}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-bold text-fg-muted uppercase">{KO_ROUND_LABELS[round.round]}</span>
+                  <span className="text-[10px] text-fg-muted">+{round.pointValue} each</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                  {round.teams.map(t => (
+                    <div
+                      key={t.teamId}
+                      className={`flex items-center gap-1.5 rounded border px-2 py-1.5 text-sm ${
+                        t.status === 'advanced'
+                          ? 'border-green-700 bg-green-900/15'
+                          : t.status === 'missed'
+                            ? 'border-red-900/50 bg-red-900/10 opacity-70'
+                            : 'border-border-subtle bg-white/5'
+                      }`}
+                    >
+                      <span className="shrink-0">
+                        {t.status === 'advanced' ? '✅' : t.status === 'missed' ? '❌' : '⬜'}
+                      </span>
+                      <span className="flex-1 min-w-0">
+                        <TeamBadge name={t.name} abbreviation={t.shortCode} size="sm" />
+                      </span>
+                      <span
+                        className={`shrink-0 text-xs font-bold tabular-nums ${
+                          t.status === 'advanced' ? 'text-accent' : 'text-fg-muted'
+                        }`}
+                      >
+                        {t.status === 'advanced' ? `+${t.points}` : t.status === 'missed' ? '0' : '—'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

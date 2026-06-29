@@ -69,36 +69,39 @@ function makePlacements(entries: Array<[string, KnockoutRound]>): Map<string, Kn
   return new Map(entries)
 }
 
-// Case 1: Team A predicted Champion, actually Champion → cumulative 6+8+10+15+20=59
+// Phase 33 cumulative values: R32=6, R16=8, QF=10, SF=15, Final=20, Champion=+20.
+// Cumulative-to-cap: R32=6, R16=14, QF=24, SF=39, Final=59, Champion=79.
+
+// Case 1: Team A predicted Champion, actually Champion → 6+8+10+15+20+20=79
 {
   const pred = makePlacements([['A', 'Champion']])
   const actual = makePlacements([['A', 'Champion']])
   const { total } = scoreKnockoutForUser(pred, actual)
-  assert('knockout: predicted Champion, actually Champion → 59', 59, total)
+  assert('knockout: predicted Champion, actually Champion → 79', 79, total)
 }
 
-// Case 2: Team A predicted Champion, actually eliminated in QF → cumulative 6+8=14
+// Case 2: Team A predicted Champion, actually eliminated in QF → cap=QF → 6+8+10=24
 {
   const pred = makePlacements([['A', 'Champion']])
   const actual = makePlacements([['A', 'QF']])
   const { total } = scoreKnockoutForUser(pred, actual)
-  assert('knockout: predicted Champion, actually QF → 14', 14, total)
+  assert('knockout: predicted Champion, actually QF → 24', 24, total)
 }
 
-// Case 3: Team A predicted SF, actually Champion → cap=SF → cumulative 6+8+10=24
+// Case 3: Team A predicted SF, actually Champion → cap=SF → 6+8+10+15=39
 {
   const pred = makePlacements([['A', 'SF']])
   const actual = makePlacements([['A', 'Champion']])
   const { total } = scoreKnockoutForUser(pred, actual)
-  assert('knockout: predicted SF, actually Champion → 24', 24, total)
+  assert('knockout: predicted SF, actually Champion → 39', 39, total)
 }
 
-// Case 4: Team A predicted R16, actually SF → cap=R16 → 6
+// Case 4: Team A predicted R16, actually SF → cap=R16 → 6+8=14
 {
   const pred = makePlacements([['A', 'R16']])
   const actual = makePlacements([['A', 'SF']])
   const { total } = scoreKnockoutForUser(pred, actual)
-  assert('knockout: predicted R16, actually SF → 6', 6, total)
+  assert('knockout: predicted R16, actually SF → 14', 14, total)
 }
 
 // Case 5: Team not in either bracket → 0
@@ -110,17 +113,17 @@ function makePlacements(entries: Array<[string, KnockoutRound]>): Map<string, Kn
 }
 
 // Sanity: perTeam cumulative breakdown (top-4 bonus is computed separately in computeUserScore)
-// A: 6+8+10+15+20=59, B: 6+8+10+15=39, C: 6+8+10=24, D: 6+8=14
+// A: Champion=79, B: Final=59, C: SF=39, D: QF=24
 {
   const pred = makePlacements([['A', 'Champion'], ['B', 'Final'], ['C', 'SF'], ['D', 'QF']])
   const actual = makePlacements([['A', 'Champion'], ['B', 'Final'], ['C', 'SF'], ['D', 'QF']])
   const result = scoreKnockoutForUser(pred, actual)
-  assert('knockout perTeam A=59', 59, result.perTeam.get('A') ?? -1)
-  assert('knockout perTeam B=39', 39, result.perTeam.get('B') ?? -1)
-  assert('knockout perTeam C=24', 24, result.perTeam.get('C') ?? -1)
-  assert('knockout perTeam D=14', 14, result.perTeam.get('D') ?? -1)
-  assert('knockout basePoints=136', 136, result.basePoints)
-  assert('knockout total=136', 136, result.total)
+  assert('knockout perTeam A=79', 79, result.perTeam.get('A') ?? -1)
+  assert('knockout perTeam B=59', 59, result.perTeam.get('B') ?? -1)
+  assert('knockout perTeam C=39', 39, result.perTeam.get('C') ?? -1)
+  assert('knockout perTeam D=24', 24, result.perTeam.get('D') ?? -1)
+  assert('knockout basePoints=201', 201, result.basePoints)
+  assert('knockout total=201', 201, result.total)
 }
 
 // ── Awards ─────────────────────────────────────────────────────────────────────
@@ -211,6 +214,8 @@ function makeBreakdown(
     groupPerMatch: new Map(),
     knockoutTotal: 0,
     knockoutPerTeam: new Map(),
+    knockoutDetail: [],
+    knockoutR32Resolved: false,
     topFourBonus: 0,
     awardsTotal: 0,
     awardsBreakdown: { boot: 0, bootTally: 0, ball: 0, glove: 0, young: 0 },

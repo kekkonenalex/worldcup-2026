@@ -24,7 +24,10 @@
  *
  *   Scoring rules (from lib/scoring.ts):
  *     Group:   6 exact | 5 same GD | 3+bonus correct outcome
- *     Knockout: cumulative per round reached: R16=6, QF=8, SF=10, Final=15, Champion=20
+ *     Knockout: cumulative per round reached: R32=6, R16=8, QF=10, SF=15, Final=20, Champion=+20
+ *               (R32 qualification points only resolve once all 72 group matches are
+ *               finished; in this 6-match mini-tournament the R32 tier is still folded
+ *               into the cumulative sum for any team that reaches a deeper round.)
  *     Top-4:   +25 per exact position match (Champion only reachable in mini-tourney)
  *     Awards:  boot=20, bootTally=10, ball=20, glove=20, young=15
  */
@@ -35,12 +38,12 @@ import { getAllUserScores } from '../../lib/scoring-server.js'
 const EXPECTED_SCORES: Record<string, {
   group: number; knockout: number; top4: number; awards: number; total: number
 }> = {
-  // Alice: all group exact (36) + Alpha Champion (59) + Bravo SF (24) + Champion bonus (25) + all awards (85)
-  'alice': { group: 36, knockout: 83, top4: 25, awards: 85, total: 229 },
-  // Bob: GD-correct groups (29) + Alpha Champion (59) + no Bravo pick (0) + Champion bonus (25) + ball+young (35)
-  'bob':   { group: 29, knockout: 59, top4: 25, awards: 35, total: 148 },
-  // Charlie user: one tally bonus (1) + Bravo capped at SF (24) + no top4 + no awards
-  'charlie': { group: 1, knockout: 24, top4: 0, awards: 0, total: 25 },
+  // Alice: all group exact (36) + Alpha Champion (79) + Bravo SF (39) + Champion bonus (25) + all awards (85)
+  'alice': { group: 36, knockout: 118, top4: 25, awards: 85, total: 264 },
+  // Bob: GD-correct groups (29) + Alpha Champion (79) + no Bravo pick (0) + Champion bonus (25) + ball+young (35)
+  'bob':   { group: 29, knockout: 79, top4: 25, awards: 35, total: 168 },
+  // Charlie user: one tally bonus (1) + Bravo capped at SF (39) + no top4 + no awards
+  'charlie': { group: 1, knockout: 39, top4: 0, awards: 0, total: 40 },
 }
 
 async function run() {

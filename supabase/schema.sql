@@ -30,7 +30,9 @@ CREATE TABLE matches (
   scheduled_at timestamptz,
   home_score   integer,
   away_score   integer,
+  winner_team_id integer REFERENCES teams,
   status       text NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled','live','finished')),
+  external_id  integer,
   created_at   timestamptz DEFAULT now()
 );
 

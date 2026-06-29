@@ -9,21 +9,30 @@ import type {
   AwardResults,
 } from '@/types/database'
 
+import { computePredictedR32 } from '@/lib/knockout-qualification'
+import { getAdvancedTeamsByRound } from '@/lib/knockout-advancement'
+
 export type AwardResult = AwardResults
 
-export type KnockoutRound = 'R16' | 'QF' | 'SF' | 'Final' | 'Champion'
+export type KnockoutRound = 'R32' | 'R16' | 'QF' | 'SF' | 'Final' | 'Champion'
 
+// Phase 33 model: cumulative points per round REACHED (path-independent).
+// Reaching R32 (= qualifying from groups) is the first scored event. Values stack:
+// a team predicted & reaching the Final earns 6+8+10+15+20 = 59.
+// The Champion tier (winning the final) keeps its +20 increment; the Top-4 bonus
+// (+25 per exact finish position) is computed separately in computeUserScore.
 export const ROUND_POINTS: Record<KnockoutRound, number> = {
-  R16: 6,
-  QF: 8,
-  SF: 10,
-  Final: 15,
+  R32: 6,
+  R16: 8,
+  QF: 10,
+  SF: 15,
+  Final: 20,
   Champion: 20,
 }
 
 export const TOP_FOUR_BONUS = 25
 
-const ROUND_ORDER: KnockoutRound[] = ['R16', 'QF', 'SF', 'Final', 'Champion']
+const ROUND_ORDER: KnockoutRound[] = ['R32', 'R16', 'QF', 'SF', 'Final', 'Champion']
 const roundIndex = (r: KnockoutRound) => ROUND_ORDER.indexOf(r)
 const minRound = (a: KnockoutRound, b: KnockoutRound): KnockoutRound =>
   roundIndex(a) <= roundIndex(b) ? a : b
@@ -73,8 +82,17 @@ const ACTUAL_MATCH_RANGES: Array<{ min: number; max: number; round: KnockoutRoun
   { min: 104, max: 104, round: 'Champion' },
 ]
 
-export function getActualKnockoutPlacements(matches: Match[]): Map<string, KnockoutRound> {
+export function getActualKnockoutPlacements(
+  matches: Match[],
+  actualR32: Set<number> | null = null,
+): Map<string, KnockoutRound> {
   const placements = new Map<string, KnockoutRound>()
+
+  // R32 layer: teams that qualified from the groups. Awarded only once the full
+  // group stage is finished (caller passes null until then → no R32 points).
+  if (actualR32) {
+    for (const teamId of actualR32) placements.set(String(teamId), 'R32')
+  }
 
   for (const m of matches) {
     if (m.winner_team_id == null) continue
@@ -114,8 +132,15 @@ const PREDICTED_MATCH_RANGES: Array<{ min: number; max: number; round: KnockoutR
 
 export function getPredictedKnockoutPlacements(
   knockoutPredictions: KnockoutPrediction[],
+  predictedR32: Set<number> | null = null,
 ): Map<string, KnockoutRound> {
   const placements = new Map<string, KnockoutRound>()
+
+  // R32 layer: the user's 32 predicted qualifiers (derived from their group
+  // predictions, since there are no stored "reaches R32" rows).
+  if (predictedR32) {
+    for (const teamId of predictedR32) placements.set(String(teamId), 'R32')
+  }
 
   for (const p of knockoutPredictions) {
     const teamKey = String(p.predicted_team_id)
@@ -168,6 +193,83 @@ export function scoreKnockoutForUser(
   return { perTeam, basePoints, total: basePoints }
 }
 
+// ── Knockout per-team-per-round detail (for profile UI) ─────────────────────────
+//
+// Derives display rows from the same placement maps the scoring total uses, so the
+// UI is always consistent with the points awarded. For each round, lists the teams
+// the user predicted to REACH that round and their status:
+//   advanced — team actually reached the round (✅, points earned)
+//   pending  — round not yet resolved for this team (⬜, no points yet)
+//   missed   — team eliminated / failed to reach the round (❌, 0 points)
+
+export type KnockoutDetailRound = 'R32' | 'R16' | 'QF' | 'SF' | 'Final'
+const DETAIL_ROUNDS: KnockoutDetailRound[] = ['R32', 'R16', 'QF', 'SF', 'Final']
+
+export interface KnockoutTeamStatus {
+  teamId: number
+  name: string
+  shortCode: string
+  flag: string | null
+  status: 'advanced' | 'pending' | 'missed'
+  points: number
+}
+
+export interface KnockoutRoundDetail {
+  round: KnockoutDetailRound
+  pointValue: number
+  teams: KnockoutTeamStatus[]
+}
+
+export function buildKnockoutDetail(input: {
+  predictedPlacements: Map<string, KnockoutRound>
+  actualPlacements: Map<string, KnockoutRound>
+  eliminated: Set<number>
+  teams: Team[]
+  groupsComplete: boolean
+}): KnockoutRoundDetail[] {
+  const { predictedPlacements, actualPlacements, eliminated, teams, groupsComplete } = input
+
+  const teamById = new Map<number, Team>()
+  for (const t of teams) teamById.set(t.id, t)
+
+  const reachedIdx = (map: Map<string, KnockoutRound>, teamKey: string): number => {
+    const r = map.get(teamKey)
+    return r ? roundIndex(r) : -1
+  }
+
+  return DETAIL_ROUNDS.map(round => {
+    const rIdx = roundIndex(round)
+    const pointValue = ROUND_POINTS[round]
+    const rows: KnockoutTeamStatus[] = []
+
+    for (const [teamKey, predRound] of predictedPlacements) {
+      // Did the user predict this team to reach (at least) this round?
+      if (roundIndex(predRound) < rIdx) continue
+
+      const teamId = Number(teamKey)
+      const advanced = reachedIdx(actualPlacements, teamKey) >= rIdx
+
+      let status: KnockoutTeamStatus['status']
+      if (advanced) status = 'advanced'
+      else if (eliminated.has(teamId) || (round === 'R32' && groupsComplete)) status = 'missed'
+      else status = 'pending'
+
+      const team = teamById.get(teamId)
+      rows.push({
+        teamId,
+        name: team?.name ?? teamKey,
+        shortCode: team?.short_code ?? '',
+        flag: team?.flag_emoji ?? null,
+        status,
+        points: advanced ? pointValue : 0,
+      })
+    }
+
+    rows.sort((a, b) => a.shortCode.localeCompare(b.shortCode))
+    return { round, pointValue, teams: rows }
+  })
+}
+
 // ── Award scoring ──────────────────────────────────────────────────────────────
 
 export function scoreAwardsForUser(
@@ -201,6 +303,8 @@ export interface UserScoreBreakdown {
   groupPerMatch: Map<string, number>
   knockoutTotal: number
   knockoutPerTeam: Map<string, number>
+  knockoutDetail: KnockoutRoundDetail[]
+  knockoutR32Resolved: boolean
   topFourBonus: number
   awardsTotal: number
   awardsBreakdown: { boot: number; bootTally: number; ball: number; glove: number; young: number }
@@ -224,6 +328,9 @@ export function computeUserScore(input: {
   awardPrediction: AwardPrediction | null
   awardResult: AwardResult | null
   teams: Team[]
+  // The 32 teams that actually qualified from the groups, or null until all 72
+  // group matches are finished (R32 points pending). Computed once by the caller.
+  actualR32Qualified?: Set<number> | null
 }): UserScoreBreakdown {
   const {
     groupPredictions,
@@ -232,6 +339,8 @@ export function computeUserScore(input: {
     knockoutMatches,
     awardPrediction,
     awardResult,
+    teams,
+    actualR32Qualified = null,
   } = input
 
   // ── Group stage ──
@@ -256,11 +365,22 @@ export function computeUserScore(input: {
   }
 
   // ── Knockout ──
-  const predictedPlacements = getPredictedKnockoutPlacements(knockoutPredictions)
-  const actualPlacements = getActualKnockoutPlacements(knockoutMatches)
+  const predictedR32 = computePredictedR32(groupPredictions, groupMatches, teams)
+  const predictedPlacements = getPredictedKnockoutPlacements(knockoutPredictions, predictedR32)
+  const actualPlacements = getActualKnockoutPlacements(knockoutMatches, actualR32Qualified)
 
   const { perTeam: knockoutPerTeam, basePoints: knockoutTotal } =
     scoreKnockoutForUser(predictedPlacements, actualPlacements)
+
+  // Per-team-per-round detail for the profile UI (consistent with knockoutTotal).
+  const advancement = getAdvancedTeamsByRound(knockoutMatches, actualR32Qualified)
+  const knockoutDetail = buildKnockoutDetail({
+    predictedPlacements,
+    actualPlacements,
+    eliminated: advancement.eliminated,
+    teams,
+    groupsComplete: actualR32Qualified != null,
+  })
 
   // ── Top-4 positions (shared by bonus and tiebreakers) ──
   const predictedChampionId =
@@ -344,6 +464,8 @@ export function computeUserScore(input: {
     groupPerMatch,
     knockoutTotal,
     knockoutPerTeam,
+    knockoutDetail,
+    knockoutR32Resolved: actualR32Qualified != null,
     topFourBonus,
     awardsTotal,
     awardsBreakdown: {

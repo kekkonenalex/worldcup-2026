@@ -8,6 +8,7 @@ import {
   type UserScoreBreakdown,
   type AwardResult,
 } from '@/lib/scoring'
+import { computeQualifiedTeams } from '@/lib/knockout-qualification'
 
 export type { AwardResult }
 
@@ -105,6 +106,12 @@ export async function getAllUserScores(
 > {
   const data = await fetchAllScoringData(supabase)
 
+  // Compute the actual R32 qualifiers ONCE (shared across all users). Returns
+  // isComplete=false until every group match is finished — R32 points stay pending.
+  const qualified = computeQualifiedTeams(data.groupMatches, data.teams)
+  for (const w of qualified.warnings) console.warn(`[knockout-qualification] ${w}`)
+  const actualR32Qualified = qualified.isComplete ? new Set(qualified.allR32) : null
+
   const scores = data.users.map(user => ({
     userId: user.id,
     breakdown: computeUserScore({
@@ -116,6 +123,7 @@ export async function getAllUserScores(
       awardPrediction: data.awardPredictionByUser.get(user.id) ?? null,
       awardResult: data.awardResult,
       teams: data.teams,
+      actualR32Qualified,
     }),
   }))
 

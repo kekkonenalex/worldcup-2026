@@ -14,7 +14,8 @@
     "sim:score-test": "tsx scripts/simulation/run-scoring-test.ts",
     "sim:full": "npm run sim:reset && npm run sim:seed && npm run sim:score-test",
     "sim:scorers-test": "tsx scripts/simulation/smoke-test-scorers.ts",
-    "sim:scorers-test:cl": "tsx scripts/simulation/smoke-test-scorers.ts CL"
+    "sim:scorers-test:cl": "tsx scripts/simulation/smoke-test-scorers.ts CL",
+    "diagnose:knockout": "tsx scripts/diagnose-knockout.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",
