@@ -17,18 +17,31 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'FOOTBALL_DATA_API_KEY not configured' }, { status: 500 })
   }
 
+  // Map external_id for any knockout fixtures whose teams are now known.
+  // Knockout matches start with team-less slots (no external_id); once a round
+  // resolves, this links them to the feed so the sync below can auto-set the
+  // winner_team_id (and scores) without manual admin entry.
+  // Non-fatal: a bootstrap hiccup must never block the result sync.
+  let bootstrapped = 0
+  let bootstrapError: string | null = null
   try {
-    // Map external_id for any knockout fixtures whose teams are now known.
-    // Knockout matches start with team-less slots (no external_id); once a round
-    // resolves, this links them to the feed so the sync below can auto-set the
-    // winner_team_id (and scores) without manual admin entry.
     const bootstrap = await bootstrapExternalIds(apiKey)
+    bootstrapped = bootstrap.bootstrapped ?? 0
+  } catch (err) {
+    bootstrapError = err instanceof Error ? err.message : String(err)
+    console.error('[cron] bootstrap error (non-fatal):', err)
+  }
+
+  try {
     const result = await syncMatchResults(apiKey)
     revalidateMatches()
     revalidateLeaderboard()
-    return NextResponse.json({ bootstrapped: bootstrap.bootstrapped, ...result })
+    return NextResponse.json({ ...result, bootstrapped, bootstrapError })
   } catch (err) {
+    // Surface the real cause (e.g. "football-data.org returned 400: token invalid")
+    // so the failure is diagnosable from the cron response instead of a blank 500.
+    const message = err instanceof Error ? err.message : String(err)
     console.error('[cron] sync error:', err)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: message, bootstrapError }, { status: 500 })
   }
 }

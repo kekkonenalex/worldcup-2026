@@ -272,14 +272,36 @@ function buildThirdSlots(): ThirdSlot[] {
   })
 }
 
-// Assigns each qualifying third-place group to exactly one R32 slot via backtracking.
+// ── Official FIFA 2026 third-place allocation ──────────────────────────────────
+//
+// FIFA publishes a fixed table mapping each combination of the 8 qualifying
+// third-place groups to specific R32 slots. The pool-constrained backtracking
+// below finds *a* valid permutation, but not necessarily FIFA's official one
+// (multiple permutations can satisfy the pools). When the actual combination is
+// listed here, we use the official assignment instead of backtracking.
+//
+// Key = the 8 qualifying group letters, sorted and comma-joined.
+// Value = slot match_number → group letter whose third-placed team fills it.
+const OFFICIAL_THIRD_ALLOCATION: Record<string, Record<number, string>> = {
+  // 2026 actual qualifiers. Verified against the live bracket: GER(E) vs PAR(D)
+  // in match 74, plus the four feed-confirmed slots (79←E, 82←I, 85←J, 87←L).
+  // The remaining {B,D,F,K} → {74,77,80,81} is forced uniquely by the pools.
+  'B,D,E,F,I,J,K,L': { 74: 'D', 77: 'F', 79: 'E', 80: 'K', 81: 'B', 82: 'I', 85: 'J', 87: 'L' },
+}
+
+// Assigns each qualifying third-place group to exactly one R32 slot.
 // Input: exactly 8 group letters (e.g. ['A','C','D','F','G','H','I','K']).
 // Output: match_number → group letter assignment.
-// Deterministic: same input always produces the same output (groups tried alphabetically).
+// Prefers the official FIFA table for the given combination; otherwise falls back
+// to deterministic pool-constrained backtracking (groups tried alphabetically).
 export function assignThirdPlaceTeams(
   qualifyingGroups: string[]
 ): Record<number, string> {
   const sorted = [...qualifyingGroups].sort()
+
+  const official = OFFICIAL_THIRD_ALLOCATION[sorted.join(',')]
+  if (official) return { ...official }
+
   const slots = buildThirdSlots()
   const assignment: Record<number, string> = {}
   const used = new Set<string>()
