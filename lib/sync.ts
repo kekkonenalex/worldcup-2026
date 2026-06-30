@@ -25,6 +25,9 @@ function createSyncClient() {
 }
 
 // Known name variations from football-data.org → our teams table names.
+// Keys are the feed's spelling (after diacritic-stripping); values are our
+// teams.name. Identity/extra variants are harmless — they only ever resolve to
+// our canonical name.
 const TEAM_ALIASES: Record<string, string> = {
   'United States': 'USA',
   'USA': 'USA',
@@ -35,6 +38,21 @@ const TEAM_ALIASES: Record<string, string> = {
   'Türkiye': 'Turkey',
   'Turkiye': 'Turkey',
   'Czech Republic': 'Czechia',
+  // DR Congo — our 'DR Congo'
+  'Congo DR': 'DR Congo',
+  'DR Congo': 'DR Congo',
+  'Democratic Republic of Congo': 'DR Congo',
+  'Democratic Republic of the Congo': 'DR Congo',
+  'Congo (Democratic Republic of the)': 'DR Congo',
+  // Cape Verde — our 'Cape Verde'
+  'Cabo Verde': 'Cape Verde',
+  'Cape Verde': 'Cape Verde',
+  'Cape Verde Islands': 'Cape Verde',
+  // Bosnia and Herzegovina — our 'Bosnia and Herzegovina'
+  'Bosnia-Herzegovina': 'Bosnia and Herzegovina',
+  'Bosnia & Herzegovina': 'Bosnia and Herzegovina',
+  'Bosnia and Herzegovina': 'Bosnia and Herzegovina',
+  'Bosnia-Hercegovina': 'Bosnia and Herzegovina',
 }
 
 export function normalizeTeamName(s: string | null | undefined): string {
@@ -136,6 +154,11 @@ export async function bootstrapExternalIds(apiKey: string): Promise<SyncResult> 
 
   let bootstrapped = 0
   const errors: string[] = []
+  // Feed team names we couldn't resolve to a team in our DB. Surfaced as warnings
+  // so a missing/incorrect alias is diagnosable from the cron response without
+  // needing to read the feed directly. Only group/R32 names (real teams, never
+  // placeholders like "Winner Group A") are collected to avoid noise.
+  const unmatchedNames = new Set<string>()
 
   for (const fdm of fdMatches) {
     const classified = classifyStage(fdm.stage)
@@ -145,7 +168,13 @@ export async function bootstrapExternalIds(apiKey: string): Promise<SyncResult> 
     const awayNorm = normalizeTeamNameNFD(fdm.awayTeam.name).toLowerCase()
     const homeId = teamNameToId.get(homeNorm) ?? teamNameToId.get(fdm.homeTeam.name.toLowerCase())
     const awayId = teamNameToId.get(awayNorm) ?? teamNameToId.get(fdm.awayTeam.name.toLowerCase())
-    if (!homeId || !awayId) continue
+    if (!homeId || !awayId) {
+      if (classified === 'group' || classified === 'r32') {
+        if (!homeId && fdm.homeTeam?.name) unmatchedNames.add(fdm.homeTeam.name)
+        if (!awayId && fdm.awayTeam?.name) unmatchedNames.add(fdm.awayTeam.name)
+      }
+      continue
+    }
 
     const matchId = ourMatchByTeams.get(`${homeId}:${awayId}`) ?? ourMatchByTeams.get(`${awayId}:${homeId}`)
     if (!matchId) continue
@@ -160,11 +189,16 @@ export async function bootstrapExternalIds(apiKey: string): Promise<SyncResult> 
     else bootstrapped++
   }
 
+  const warnings =
+    unmatchedNames.size > 0
+      ? [`Unmatched feed team names (add a TEAM_ALIASES entry → our teams.name): ${[...unmatchedNames].join(', ')}`]
+      : []
+
   return {
     bootstrapped, updated: 0, cleared: 0, clearedKnockout: 0, groupUpdated: 0, groupCleared: 0,
     knockoutUpdated: 0, cascadeAssigned: 0, cascadeEmptied: 0, errors,
     fetched: fdMatches.length, finishedInFeed: 0, written: 0,
-    skippedAlreadyFinalized: 0, skippedFeedNotFinished: 0, warnings: [],
+    skippedAlreadyFinalized: 0, skippedFeedNotFinished: 0, warnings,
   }
 }
 
@@ -271,11 +305,13 @@ export async function rebuildKnockoutCascade(): Promise<{ assigned: number; empt
         }
         return null
       }
-      const resolvedHome = resolveKnockoutSlot(def.slot_a)
-      const resolvedAway = resolveKnockoutSlot(def.slot_b)
-      if (resolvedHome != null && resolvedAway != null) {
-        homeId = resolvedHome; awayId = resolvedAway
-      }
+      // Populate each slot INDEPENDENTLY — mirrors recomputeBracketCascade so the
+      // cron produces the same bracket as the admin "recompute" button. Setting a
+      // slot only when BOTH feeders resolved would clear the advancing winner of a
+      // completed match while its sibling match is still pending (the bug that made
+      // the bracket "clear" after every cron run).
+      homeId = resolveKnockoutSlot(def.slot_a)
+      awayId = resolveKnockoutSlot(def.slot_b)
     }
 
     matchMap.set(def.match_number, { ...entry, home: homeId, away: awayId })

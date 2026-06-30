@@ -24,9 +24,11 @@ export async function GET(request: Request) {
   // Non-fatal: a bootstrap hiccup must never block the result sync.
   let bootstrapped = 0
   let bootstrapError: string | null = null
+  let bootstrapWarnings: string[] = []
   try {
     const bootstrap = await bootstrapExternalIds(apiKey)
     bootstrapped = bootstrap.bootstrapped ?? 0
+    bootstrapWarnings = bootstrap.warnings
   } catch (err) {
     bootstrapError = err instanceof Error ? err.message : String(err)
     console.error('[cron] bootstrap error (non-fatal):', err)
@@ -36,7 +38,7 @@ export async function GET(request: Request) {
     const result = await syncMatchResults(apiKey)
     revalidateMatches()
     revalidateLeaderboard()
-    return NextResponse.json({ ...result, bootstrapped, bootstrapError })
+    return NextResponse.json({ ...result, bootstrapped, bootstrapError, bootstrapWarnings })
   } catch (err) {
     // Surface the real cause (e.g. "football-data.org returned 400: token invalid")
     // so the failure is diagnosable from the cron response instead of a blank 500.
