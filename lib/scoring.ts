@@ -11,6 +11,7 @@ import type {
 
 import { computePredictedR32 } from '@/lib/knockout-qualification'
 import { getAdvancedTeamsByRound } from '@/lib/knockout-advancement'
+import { awardNameMatches } from '@/lib/awards'
 
 export type AwardResult = AwardResults
 
@@ -279,8 +280,7 @@ export function scoreAwardsForUser(
   const zero = { boot: 0, bootTally: 0, ball: 0, glove: 0, young: 0, total: 0 }
   if (!prediction || !actual) return zero
 
-  const nameMatch = (a: string | null | undefined, b: string | null | undefined): boolean =>
-    a != null && b != null && a.trim().toLowerCase() === b.trim().toLowerCase()
+  const nameMatch = awardNameMatches
 
   const boot = nameMatch(prediction.golden_boot_player, actual.golden_boot_player) ? 20 : 0
   const bootTally =
@@ -441,13 +441,8 @@ export function computeUserScore(input: {
     predictedThirdId !== null && actualThirdId !== null && predictedThirdId === actualThirdId ? 1 : 0
 
   // GoldenBoot tiebreaker
-  const goldenBoot: 0 | 1 = (() => {
-    if (!awardPrediction?.golden_boot_player || !awardResult?.golden_boot_player) return 0
-    return awardPrediction.golden_boot_player.trim().toLowerCase() ===
-      awardResult.golden_boot_player.trim().toLowerCase()
-      ? 1
-      : 0
-  })()
+  const goldenBoot: 0 | 1 =
+    awardNameMatches(awardPrediction?.golden_boot_player, awardResult?.golden_boot_player) ? 1 : 0
 
   // r32Correct: user's predicted R32 winners (bracket_position 73–88) that actually won R32
   const actualR32WinnerSet = new Set(

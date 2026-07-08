@@ -2,6 +2,7 @@ import { requireAdmin } from '@/lib/admin'
 import { createClient } from '@/lib/supabase/server'
 import AdminMatchResults from '@/components/AdminMatchResults'
 import AdminReminderTrigger from '@/components/AdminReminderTrigger'
+import AdminAwardWinners, { type AwardWinnersInitial } from '@/components/AdminAwardWinners'
 import type { Match, Team } from '@/types/database'
 
 export type AdminMatch = Match & {
@@ -16,7 +17,7 @@ export default async function AdminPage() {
 
   const supabase = await createClient()
 
-  const [{ data: rawMatches }, { data: rawTeams }, { count: externalIdCount }] = await Promise.all([
+  const [{ data: rawMatches }, { data: rawTeams }, { count: externalIdCount }, { data: rawAwardResults }] = await Promise.all([
     supabase
       .from('matches')
       .select(`
@@ -34,11 +35,13 @@ export default async function AdminPage() {
       .from('matches')
       .select('id', { count: 'exact', head: true })
       .not('external_id', 'is', null),
+    supabase.from('award_results').select('*').eq('id', 1).limit(1),
   ])
 
   const matches = (rawMatches ?? []) as unknown as AdminMatch[]
   const teams = (rawTeams ?? []) as unknown as AdminTeam[]
   const hasSomeExternalIds = (externalIdCount ?? 0) > 0
+  const awardWinners = (rawAwardResults?.[0] ?? null) as unknown as AwardWinnersInitial | null
 
   return (
     <div className="pb-16">
@@ -51,6 +54,7 @@ export default async function AdminPage() {
       </div>
 
       <AdminMatchResults matches={matches} teams={teams} hasSomeExternalIds={hasSomeExternalIds} />
+      <AdminAwardWinners initial={awardWinners} />
       <AdminReminderTrigger />
     </div>
   )
